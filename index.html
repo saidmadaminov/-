@@ -120,23 +120,46 @@ table.est tr.grand td{font-size:16px; font-weight:800; border-top:2px solid var(
 #sheet{display:none}
 @media print{
   body{overflow:visible; background:#fff}
-  header,#app,dialog{display:none !important}
-  #sheet{display:block; padding:24px; font-size:12px}
-  #sheet h1{font-size:18px; margin-bottom:4px}
-  #sheet .pimgs{display:flex; gap:12px; margin:14px 0}
-  #sheet .pimgs img{width:48%; border:1px solid #ccc; border-radius:6px}
-  #sheet table{width:100%; border-collapse:collapse; margin:10px 0}
-  #sheet td,#sheet th{border:1px solid #bbb; padding:5px 8px; text-align:left}
-  #sheet th{background:#f0f2f6}
+  header,#app,dialog,#scrim,#errdiv{display:none !important}
+  #sheet{display:block; padding:20px 24px; font-size:12px; color:#111}
+  #sheet h1{font-size:19px; margin-bottom:2px}
+  #sheet h2{font-size:14px; margin:16px 0 6px; border-bottom:1.5px solid #333; padding-bottom:3px}
+  #sheet .subline{color:#555; margin-bottom:8px}
+  #sheet .pgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  #sheet figure{margin:0}
+  #sheet img{width:100%; border:1px solid #999; border-radius:4px}
+  #sheet figcaption{font-size:11px; color:#444; padding-top:2px}
+  #sheet table{width:100%; border-collapse:collapse; margin:8px 0}
+  #sheet td,#sheet th{border:1px solid #999; padding:4px 8px; text-align:left}
+  #sheet th{background:#eef1f6}
+  #sheet ul.norms{margin:6px 0 6px 18px}
+  #sheet ol{margin:6px 0 6px 18px; line-height:1.5}
+  #sheet .foot{margin-top:14px; color:#888; font-size:10px}
+  #sheet tr.grand td{font-weight:800}
 }
 
 #errdiv{display:none; position:fixed; inset:auto 10px 10px 10px; background:#2b1113; color:#ffd7d9; border-radius:10px; padding:12px 14px; z-index:999; font:12px/1.5 Consolas,monospace; max-height:40vh; overflow:auto; white-space:pre-wrap}
+#scrim{display:none; position:fixed; inset:0; background:rgba(15,22,36,.45); z-index:35}
+.panelbtn{display:none}
 @media (max-width:1250px){ aside#right{width:280px; min-width:280px} aside#side{width:300px; min-width:300px} }
 @media (max-width:1020px){
-  #app{flex-direction:column; overflow:auto}
-  aside#side{width:auto; min-width:0; border-right:0; max-height:40vh}
-  aside#right{width:auto; min-width:0; border-left:0; border-top:1px solid var(--line)}
-  main{min-height:60vh}
+  #app{display:block; height:calc(100% - 54px); position:relative; overflow:hidden}
+  main{height:100%; padding:8px}
+  aside#side, aside#right{
+    position:absolute; top:0; bottom:0; width:min(88vw,360px); min-width:0; max-height:none;
+    z-index:40; transition:transform .25s ease; box-shadow:0 12px 40px rgba(16,24,40,.3); overflow-y:auto;
+  }
+  aside#side{left:0; border-right:1px solid var(--line); transform:translateX(-105%)}
+  aside#right{right:0; border-left:1px solid var(--line); transform:translateX(105%)}
+  body.sideOpen aside#side{transform:none}
+  body.dataOpen aside#right{transform:none}
+  body.sideOpen #scrim, body.dataOpen #scrim{display:block}
+  .panelbtn{display:inline-flex}
+  .tabs button{padding:10px 14px}
+  .pill{padding:10px 12px}
+  #hint{display:none}
+  #angleBadge{top:8px; left:8px; padding:5px 10px}
+  #nBadge{left:8px; bottom:8px; max-width:calc(100% - 16px); font-size:11.5px; padding:5px 9px}
 }
 </style>
 </head>
@@ -147,7 +170,7 @@ table.est tr.grand td{font-size:16px; font-weight:800; border-top:2px solid var(
     <div class="mark">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M3 21h4v-4h4v-4h4V9h4V5h2" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </div>
-    <div>ЛестПро<small>конфигуратор лестниц · v1.1</small></div>
+    <div>ЛестПро<small>конфигуратор лестниц · v1.3</small></div>
   </div>
   <div class="hspace"></div>
   <select id="presetSel" style="width:auto; border:1px solid var(--line); border-radius:9px; padding:7px 9px; background:#fff; font-weight:600">
@@ -164,7 +187,6 @@ table.est tr.grand td{font-size:16px; font-weight:800; border-top:2px solid var(
   <input type="file" id="loadFile" accept=".json" style="display:none">
   <button class="hbtn" id="pngBtn">🖼 PNG</button>
   <button class="hbtn" id="printBtn">🖨 Спецификация</button>
-  <button class="hbtn primary" id="orderBtn">Оформить заявку</button>
 </header>
 
 <div id="app">
@@ -208,7 +230,7 @@ table.est tr.grand td{font-size:16px; font-weight:800; border-top:2px solid var(
         <div class="row slider" id="rowSD_r" style="display:none"><input type="range" id="iSD_r" min="1100" max="3200" step="50"></div>
         <div class="row"><label>Толщина ступени</label><input type="number" id="iT" min="20" max="80" step="5"><span class="u">мм</span></div>
         <div class="row" id="rowOpenChk"><label>Проём над лестницей</label><input type="checkbox" id="iOpenOn" style="width:16px;height:16px;accent-color:var(--acc)"></div>
-        <div class="row" id="rowOpen" style="display:none"><label>Длина проёма</label><input type="number" id="iOpen" min="900" max="8000" step="50"><span class="u">мм</span></div>
+        <div class="row" id="rowOpen" style="display:none"><label>Длина проёма (от верха)</label><input type="number" id="iOpen" min="300" max="12000" step="10"><span class="u">мм</span></div>
         <div class="calc" id="geomCalc"></div>
       </div>
     </details>
@@ -217,21 +239,30 @@ table.est tr.grand td{font-size:16px; font-weight:800; border-top:2px solid var(
       <summary>Ступени</summary>
       <div class="grpbody">
         <div class="row"><label>Подбор числа</label>
-          <div class="seg" id="modeSeg"><button data-m="auto" class="on">Авто · по подступенку</button><button data-m="manual">Точное число</button></div>
+          <div class="seg" id="modeSeg"><button data-m="auto" class="on">Авто</button><button data-m="length">По длине</button><button data-m="manual">Точно N</button></div>
         </div>
+        <div class="row" id="rowL" style="display:none"><label>Длина марша (пол)</label><input type="number" id="iL" min="800" max="12000" step="10"><span class="u">мм</span></div>
         <div class="row" id="rowHT"><label>Подступенок цель</label><input type="number" id="iHT" min="130" max="220" step="1"><span class="u">мм</span></div>
         <div class="row slider" id="rowHT_r"><input type="range" id="iHT_r" min="140" max="200" step="1"></div>
-        <div class="row" id="rowN" style="display:none"><label>Число подъёмов</label><input type="number" id="iN" min="3" max="26" step="1"><span class="u">шт</span></div>
+        <div class="row" id="rowN"><label>Ступеней (подъёмов)</label><input type="number" id="iN" min="3" max="26" step="1"><span class="u">шт</span></div>
+        <div class="row"><label>Свес ступени</label><input type="number" id="iNos" min="0" max="45" step="5"><span class="u">мм</span></div>
         <label class="chk"><input type="checkbox" id="iRiser" checked> Подступенки (закрытые ступени)</label>
-        <div class="hintline">Формула безопасности (Блондель): <b>2h + b = 600–650 мм</b>.</div>
+        <button class="bigbtn ghost" id="optBtn" style="margin-top:12px">✨ Подобрать оптимально</button>
+        <div class="hintline">Формула безопасности (Блондель): <b>2h + b = 600–650 мм</b>. Все расчёты — с точностью 0,1 мм.</div>
       </div>
     </details>
 
     <details class="grp" open>
       <summary>Материалы</summary>
       <div class="grpbody">
-        <div class="row"><label>Ступени</label><select id="selWood"></select></div>
-        <div class="swatches" id="swWood"></div>
+        <div class="row"><label>Материал</label>
+          <div class="seg" id="matSeg"><button data-mat="wood" class="on">Дерево</button><button data-mat="metal">Металл</button></div>
+        </div>
+        <div id="woodBlock">
+          <div class="row"><label>Порода</label><select id="selWood"></select></div>
+          <div class="swatches" id="swWood"></div>
+        </div>
+        <div class="row" id="metalRow" style="display:none"><label>Настил</label><select id="selMetal"></select></div>
         <div class="row"><label>Каркас</label><select id="selFrame"></select></div>
         <div class="row"><label>Цвет каркаса</label><select id="selFrameCol">
           <option value="graphite">Графит</option><option value="black">Чёрный мат</option><option value="white">Белый</option><option value="met">Металлик</option>
@@ -262,14 +293,16 @@ table.est tr.grand td{font-size:16px; font-weight:800; border-top:2px solid var(
         <button data-view="plan">2D · сверху</button>
         <button data-view="side">2D · сбоку</button>
       </div>
+      <button class="pill panelbtn" id="sideBtn">⚙ Параметры</button>
       <button class="pill on" id="dimsTgl">📏 Размеры</button>
       <button class="pill" id="fitBtn">⤢ Вписать вид</button>
+      <button class="pill panelbtn" id="dataBtn">📊 Данные</button>
     </div>
     <div id="stage">
       <canvas id="cv"></canvas>
       <div id="angleBadge">∠ <span id="angVal">30°</span><small id="angInfo">комфорт</small></div>
       <div id="nBadge"></div>
-      <div id="hint">ЛКМ — вращение · колесо — масштаб · Shift+ЛКМ — панорама · R — вписать</div>
+      <div id="hint">ЛКМ — вращение · колесо/щипок — масштаб · Shift+ЛКМ — панорама · R — вписать</div>
     </div>
   </main>
 
@@ -283,34 +316,14 @@ table.est tr.grand td{font-size:16px; font-weight:800; border-top:2px solid var(
       <div id="warnBox"></div>
     </div>
     <div class="card">
-      <h3>₽ Предварительная стоимость</h3>
-      <div id="costBox"></div>
-      <button class="bigbtn ghost" id="estBtn2">Подробная смета</button>
-      <div class="disc">Оценка по укрупнённым расценкам РФ (материалы + работа), не является офертой. Точная цена — после замера.</div>
+      <h3>🔩 Спецификация деталей</h3>
+      <table class="kv" id="partsTbl"></table>
+      <div class="disc">Полный лист со всеми видами и размерами — кнопка «🖨 Спецификация» вверху.</div>
     </div>
-    <button class="bigbtn" id="orderBtn2">Отправить заявку производству</button>
   </aside>
 </div>
 
-<dialog id="mEst">
-  <div class="dhead"><h2>Смета · предварительная</h2><button class="x" onclick="this.closest('dialog').close()">✕</button></div>
-  <div class="dbody" id="estBody"></div>
-</dialog>
-
-<dialog id="mOrder">
-  <div class="dhead"><h2>Заявка производству</h2><button class="x" onclick="this.closest('dialog').close()">✕</button></div>
-  <div class="dbody">
-    <div id="ordSum"></div>
-    <div class="fgrid">
-      <div class="fld"><label>Ваше имя *</label><input id="ordName" placeholder="Иван"></div>
-      <div class="fld"><label>Телефон *</label><input id="ordPhone" placeholder="+7 900 000-00-00"></div>
-      <div class="fld full"><label>Комментарий</label><textarea id="ordNote" placeholder="Особенности монтажа, сроки, город…"></textarea></div>
-    </div>
-    <button class="bigbtn" id="ordSend" style="margin-top:14px">Отправить заявку</button>
-    <div class="disc">Заявка сохраняется локально (демо-режим без сервера) и скачивается файлом конфигурации.</div>
-  </div>
-</dialog>
-
+<div id="scrim"></div>
 <div id="errdiv"></div>
 <div id="sheet"></div>
 
@@ -341,17 +354,21 @@ const RAILS={
   glass:{name:'Стекло закалённое 10 мм', ppm:8800},
   none:{name:'Без ограждения', ppm:0},
 };
-const FINISH={oil:1.10, lak:1.06, ton:1.16, white:1.20};
+const METALS={
+  steel:{name:'Рифлёная сталь', col:[168,172,178], dark:[122,126,132]},
+  grate:{name:'Решётчатый настил', col:[140,146,154], dark:[100,105,112]},
+};
+const FINISHNAME={oil:'масло-воск', lak:'лак матовый', ton:'тонирование', white:'эмаль белая'};
 const FRAMECOLS={graphite:[56,62,70], black:[36,38,42], white:[232,234,237], met:[145,151,160]};
 const INOX=[188,196,205];
 
 /* ---------- состояние ---------- */
 const S={
   type:'straight', H:2800, W:950, b:280, treadT:40, riser:true, nosing:25,
-  stepMode:'auto', hTarget:165, nManual:17,
-  openingOn:false, openingLen:2400,
+  stepMode:'auto', hTarget:165, nManual:17, runTarget:3000,
+  openingOn:false, openingLen:3700,
   spiralD:1700,
-  wood:'oak', frame:'closed', frameColor:'graphite', finish:'oil',
+  mat:'wood', wood:'oak', metal:'steel', frame:'closed', frameColor:'graphite', finish:'oil',
   rail:'balusters', railSide:'right', railH:900,
   view:'3d', showDims:true,
 };
@@ -361,30 +378,57 @@ const cam={yaw:-0.78, pitch:0.46, dist:5200, target:[1500,900,500], panX:0, panY
 
 const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
 const fmt=n=>Math.round(n).toLocaleString('ru-RU');
+const fmt1=n=>n.toLocaleString('ru-RU',{minimumFractionDigits:0,maximumFractionDigits:1});
 const $=id=>document.getElementById(id);
+function treadCols(){
+  return S.mat==='metal' ? METALS[S.metal] : WOODS[S.wood];
+}
+function matName(){
+  return S.mat==='metal' ? METALS[S.metal].name : WOODS[S.wood].name;
+}
 
 /* ============================================================
    ПРОИЗВОДНЫЕ + НОРМЫ
    ============================================================ */
 function derive(){
-  const H=S.H, b=S.b;
-  let n = S.stepMode==='auto' ? clamp(Math.round(H/S.hTarget),3,26) : clamp(Math.round(S.nManual),3,26);
-  const h=H/n;
-  D.n=n; D.h=h; D.b=b;
-  D.angle=Math.atan2(h,b)*180/Math.PI;
-  D.blondel=2*h+b;
-  D.slopeLen=Math.hypot((n-1)*b,H);
-  D.marchArea=S.W*D.slopeLen/1e6;
+  const H=S.H;
   D.warns=[];
   const add=(lv,t)=>D.warns.push({lv,t});
-  if(h<150) add(h<130?'err':'warn',`Подступенок ${fmt(h)} мм — ${h<130?'опасно низкий':'ниже комфортного диапазона'} (норма 150–200 мм).`);
-  else if(h>200) add(h>220?'err':'warn',`Подступенок ${fmt(h)} мм — выше нормы 200 мм (макс. 220 для внутриквартирных).`);
-  else add('ok',`Подступенок ${fmt(h)} мм — в норме.`);
-  if(b<250) add(b<230?'err':'warn',`Проступь ${b} мм — меньше рекомендованных 250–320 мм.`);
-  else if(b>330) add('warn',`Проступь ${b} мм — великовата (норма 250–320 мм).`);
-  else add('ok',`Проступь ${b} мм — в норме.`);
-  if(D.blondel<560||D.blondel>660) add('warn',`Блондель 2h+b = ${fmt(D.blondel)} мм — вне комфортных 600–650 мм.`);
-  else add('ok',`2h+b = ${fmt(D.blondel)} мм — «золотой шаг».`);
+  /* --- число подъёмов и проступь: авто / точно N / по длине марша --- */
+  let n,b;
+  if(S.stepMode==='length'){
+    let best=null;
+    for(let k=3;k<=26;k++){
+      const hh=H/k, bb=S.runTarget/(k-1);
+      if(hh<130||hh>230||bb<200||bb>400)continue;
+      const sc=Math.abs(2*hh+bb-625)+(hh<145||hh>200?150:0);
+      if(!best||sc<best.sc)best={k,sc};
+    }
+    n=best?best.k:clamp(Math.round(H/S.hTarget),3,26);
+    b=S.runTarget/(n-1);            // точная проступь под заданную длину
+  }else{
+    n=S.stepMode==='auto'?clamp(Math.round(H/S.hTarget),3,26):clamp(Math.round(S.nManual),3,26);
+    b=S.b;
+  }
+  const h=H/n;
+  D.n=n; D.h=h; D.b=b;
+  D.run=(n-1)*b;                    // точная длина по полу
+  D.angle=Math.atan2(h,b)*180/Math.PI;
+  D.blondel=2*h+b;
+  D.slopeLen=Math.hypot(D.run,H);
+  D.marchArea=S.W*D.slopeLen/1e6;
+  D.landRisers=(S.type==='lshape'||S.type==='ushape')?Math.ceil(n/2):0;
+  D.landY=D.landRisers?D.landRisers*h:0;
+  D.steps=[];
+  for(let i=1;i<=n;i++)D.steps.push({i,y:i*h});
+  if(h<150) add(h<130?'err':'warn',`Подступенок ${fmt1(h)} мм — ${h<130?'опасно низкий':'ниже комфортного диапазона'} (норма 150–200 мм).`);
+  else if(h>200) add(h>220?'err':'warn',`Подступенок ${fmt1(h)} мм — выше нормы 200 мм (макс. 220 для внутриквартирных).`);
+  else add('ok',`Подступенок ${fmt1(h)} мм — в норме.`);
+  if(b<250) add(b<230?'err':'warn',`Проступь ${fmt1(b)} мм — меньше рекомендованных 250–320 мм.`);
+  else if(b>330) add('warn',`Проступь ${fmt1(b)} мм — великовата (норма 250–320 мм).`);
+  else add('ok',`Проступь ${fmt1(b)} мм — в норме.`);
+  if(D.blondel<560||D.blondel>660) add('warn',`Блондель 2h+b = ${fmt1(D.blondel)} мм — вне комфортных 600–650 мм.`);
+  else add('ok',`2h+b = ${fmt1(D.blondel)} мм — «золотой шаг».`);
   if(D.angle>45) add('err',`Угол ${D.angle.toFixed(1)}° — круто даже для чердака (макс. 45°).`);
   else if(D.angle>38) add('warn',`Угол ${D.angle.toFixed(1)}° — крутовато, комфорт до 38°.`);
   else if(D.angle<20) add('warn',`Угол ${D.angle.toFixed(1)}° — очень полого, марш длинный.`);
@@ -392,22 +436,27 @@ function derive(){
   if(S.W<800) add(S.W<700?'err':'warn',`Ширина марша ${S.W} мм — для основного подъёма нужно ≥ 900 мм.`);
   else add('ok',`Ширина марша ${S.W} мм.`);
   if(S.type==='straight' && n>18) add('warn',`Подъёмов ${n} > 18 — СП требует промежуточную площадку (возьмите Г/П-образную).`);
-  D.head=null;
+  D.head=null; D.minOpen=null;
   if(S.type==='straight' && S.openingOn){
-    const i=clamp(Math.ceil(S.openingLen/b),1,n);
-    D.head=H-200-i*h;
-    if(D.head<2000) add('err',`Просвет под перекрытием ≈ ${fmt(D.head)} мм < 2000 мм — увеличьте проём или уменьшите проступь.`);
-    else if(D.head<2100) add('warn',`Просвет ≈ ${fmt(D.head)} мм — впритык (норма ≥ 2000 мм).`);
-    else add('ok',`Просвет под перекрытием ≈ ${fmt(D.head)} мм.`);
+    const edge=D.run-clamp(S.openingLen,300,D.run);
+    if(edge>30){
+      const i=clamp(Math.ceil(edge/b-1e-9),1,n);
+      D.head=H-200-i*h;
+      const imax=Math.floor((H-2200)/h);
+      if(imax>=1)D.minOpen=Math.max(0,Math.ceil((D.run-b*imax)/10)*10);
+      if(D.head<2000) add('err',`Просвет под перекрытием = ${fmt1(D.head)} мм < 2000 мм${D.minOpen>0?` — нужен проём ≥ ${fmt(D.minOpen)} мм`:' — прямой марш не проходит, возьмите Г/П-образную'}.`);
+      else if(D.head<2100) add('warn',`Просвет = ${fmt1(D.head)} мм — впритык (норма ≥ 2000 мм).`);
+      else add('ok',`Просвет под перекрытием = ${fmt1(D.head)} мм.`);
+    } else add('ok','Проём перекрывает весь марш — просвет не ограничен.');
   }
   if(S.railH<900) add('warn',`Высота ограждения ${S.railH} мм < 900 мм по СП 1.13330.`);
   D.spiralRot=0;
   if(S.type==='spiral'){
     const R=S.spiralD/2, r0=80, rw=r0+(R-r0)*2/3;
     const chord=2*rw*Math.sin(Math.PI/n);
-    if(chord<240) add('warn',`Проступь на линии ходьбы ≈ ${fmt(chord)} мм — маловато (≥ 250 мм).`);
+    if(chord<240) add('warn',`Проступь на линии ходьбы ≈ ${fmt1(chord)} мм — маловато (≥ 250 мм).`);
     const narrow=2*(r0+150)*Math.sin(Math.PI/n);
-    if(narrow<220) add('warn',`Ширина ступени в 150 мм от стойки ≈ ${fmt(narrow)} мм — узко (норма ≥ 250 мм).`);
+    if(narrow<220) add('warn',`Ширина ступени в 150 мм от стойки ≈ ${fmt1(narrow)} мм — узко (норма ≥ 250 мм).`);
     D.spiralRot=n*(2*Math.asin(Math.min(1,b/(2*rw))))*180/Math.PI;
   }
 }
@@ -453,7 +502,7 @@ function stringerProfile(n,baseY){
 
 function addFlight(o){
   const {org,dir,baseY,risers,W}=o, h=D.h,b=D.b,t=S.treadT,nos=S.nosing;
-  const wood=WOODS[S.wood].col, frameCol=FRAMECOLS[S.frameColor];
+  const wood=treadCols().col, frameCol=FRAMECOLS[S.frameColor];
   const yaw=Math.atan2(dir[1],dir[0]);
   const L=(risers-1)*b;
   for(let i=1;i<risers;i++){
@@ -479,7 +528,7 @@ function addFlight(o){
 function addRisers(o){
   if(!S.riser)return;
   const {org,dir,baseY,risers,W}=o,h=D.h,b=D.b,t=S.treadT;
-  const woodD=WOODS[S.wood].dark, yaw=Math.atan2(dir[1],dir[0]);
+  const woodD=treadCols().dark, yaw=Math.atan2(dir[1],dir[0]);
   for(let i=1;i<risers;i++){
     const yTop=baseY+i*h, yBot=baseY+(i-1)*h;
     const c=loc(org,dir,(i-1)*b+10, W/2, yBot+(yTop-yBot-t)/2);
@@ -571,28 +620,30 @@ function addFloors(bb){
 
 /* ---------- типы ---------- */
 function buildStraight(){
-  const n=D.n,h=D.h,b=S.b,W=S.W,L=(n-1)*b;
+  const n=D.n,h=D.h,b=D.b,W=S.W,L=D.run;
   addFlight({org:[0,0],dir:[1,0],baseY:0,risers:n,W});
   addRisers({org:[0,0],dir:[1,0],baseY:0,risers:n,W});
   const sides=S.railSide==='both'?['u1','u0']:S.railSide==='right'?['u1']:['u0'];
   addRailFlight({org:[0,0],dir:[1,0],baseY:0,risers:n,W},sides);
-  const openX=S.openingOn? clamp(S.openingLen, 600, L+900) : L+60;
-  if(!S.openingOn || S.openingLen < L+900){
-    addBox({c:[(openX+L+900)/2, S.H-100, W/2], s:[L+900-openX,200,W+300], col:[219,224,232], role:'slab', alpha:.97});
+  // перекрытие верхнего этажа: пол прибытия всегда; над нижней частью марша — если проём короче марша
+  addBox({c:[L+450, S.H-100, W/2], s:[900,200,W+300], col:[219,224,232], role:'slab', alpha:.97});
+  if(S.openingOn){
+    const edge=L-clamp(S.openingLen,300,L);
+    if(edge>60)addBox({c:[(edge-80)/2, S.H-100, W/2], s:[edge+80,200,W+300], col:[219,224,232], role:'slab', alpha:.97});
   }
-  const x1=Math.max(L+1000, openX+300);
+  const x1=L+1100;
   M.bbox={x0:-250,x1,z0:-350,z1:W+350,y0:0,y1:S.H+250};
   M.plan={x0:-350,z0:-450,x1:x1+350,z1:W+450};
   M.foot={x0:0,x1:L,z0:0,z1:W};
   M.dims.push({a:[-170,0,W/2],b:[-170,S.H,W/2],label:`H = ${fmt(S.H)}`});
-  M.dims.push({a:[0,0,-200],b:[L,0,-200],label:`Проекция = ${fmt(L)}`});
+  M.dims.push({a:[0,0,-200],b:[L,0,-200],label:`L = ${fmt1(L)}`});
   M.dims.push({a:[L+170,0,0],b:[L+170,0,W],label:`W = ${fmt(W)}`});
-  M.dims.push({a:[b*1.1,h,-340],b:[b*2.1,h,-340],label:`b = ${S.b}`});
-  M.dims.push({a:[b*2.1,0,-340],b:[b*2.1,h,-340],label:`h = ${fmt(h)}`});
+  M.dims.push({a:[b*1.1,h,-340],b:[b*2.1,h,-340],label:`b = ${fmt1(b)}`});
+  M.dims.push({a:[b*2.1,0,-340],b:[b*2.1,h,-340],label:`h = ${fmt1(h)}`});
   M.stats.type='Прямая одномаршевая';
 }
 function buildL(){
-  const n=D.n,h=D.h,b=S.b,W=S.W;
+  const n=D.n,h=D.h,b=D.b,W=S.W;
   const n1=Math.ceil(n/2),n2=n-n1;
   const L1=(n1-1)*b, L2=(n2-1)*b;
   const landW=W, landY=n1*h;
@@ -626,7 +677,7 @@ function buildL(){
   M.stats.type='Г-образная с площадкой';
 }
 function buildU(){
-  const n=D.n,h=D.h,b=S.b,W=S.W,gap=60;
+  const n=D.n,h=D.h,b=D.b,W=S.W,gap=60;
   const n1=Math.ceil(n/2),n2=n-n1;
   const L1=(n1-1)*b;
   const landD=2*W+gap, landW=W, landY=n1*h;
@@ -664,8 +715,8 @@ function buildU(){
 function buildSpiral(){
   const n=D.n,h=D.h,R=S.spiralD/2,r0=80;
   const rw=r0+(R-r0)*2/3;
-  const alfa=2*Math.asin(Math.min(1,S.b/(2*rw)));
-  const wood=WOODS[S.wood].col, woodD=WOODS[S.wood].dark;
+  const alfa=2*Math.asin(Math.min(1,D.b/(2*rw)));
+  const wood=treadCols().col, woodD=treadCols().dark;
   const frameCol=FRAMECOLS[S.frameColor];
   const t=S.treadT, K=5;
   const railPts=[];
@@ -698,7 +749,7 @@ function buildSpiral(){
   addCyl({x:0,z:0,y0:0,y1:S.H+40,r:60,col:frameCol,role:'frame'});
   addCyl({x:0,z:0,y0:0,y1:14,r:150,col:frameCol,role:'frame'});
   M.stats.frameLen+=S.H/1000;
-  M.stats.walkLen+=(n-1)*S.b/1000;
+  M.stats.walkLen+=(n-1)*D.b/1000;
   if(S.rail!=='none' && railPts.length>1){
     const hr=S.railH;
     const {railCol,postCol}=railColors();
@@ -935,7 +986,7 @@ function renderPlan(g,w,h){
     if(p.role==='slab'){g.fillStyle='rgba(210,218,230,.4)';g.fill();}
     else if(p.role==='frame'){g.fillStyle='rgba(120,130,145,.5)';g.fill();g.strokeStyle='rgba(90,100,115,.7)';g.lineWidth=.8;g.stroke();}
     else if(p.role==='tread'||p.role==='landing'){
-      const c=WOODS[S.wood].col;
+      const c=treadCols().col;
       g.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`;g.fill();
       g.strokeStyle='#4a5568';g.lineWidth=1.1;g.stroke();
     }
@@ -1007,14 +1058,14 @@ function renderPlan(g,w,h){
    2D ФАСАД (развёртка)
    ============================================================ */
 function facadeSegs(){
-  const n=D.n,b=S.b;
+  const n=D.n,b=D.b;
   if(S.type==='lshape'){const n1=Math.ceil(n/2);return[{r:n1-1},{land:S.W},{r:n-n1-1}];}
   if(S.type==='ushape'){const n1=Math.ceil(n/2);return[{r:n1-1},{land:2*S.W+60},{r:n-n1-1}];}
   return[{r:n-1}];
 }
 function renderSide(g,w,h){
   g.fillStyle='#fff';g.fillRect(0,0,w,h);
-  const segs=facadeSegs(), b=S.b, hStep=D.h;
+  const segs=facadeSegs(), b=D.b, hStep=D.h;
   let totalRun=0;for(const s of segs)totalRun+=(s.r||0)*b+(s.land||0);
   const padL=90,padR=80,padT=80,padB=100;
   const k=Math.min((w-padL-padR)/Math.max(1,totalRun),(h-padT-padB)/Math.max(1,S.H));
@@ -1047,9 +1098,9 @@ function renderSide(g,w,h){
   g.fillRect(X(x-5),Y(S.H+200),Math.min(320*k,240),200*k);
   if(S.showDims){
     dim2D(g,[X(-35),Y(0)],[X(-35),Y(S.H)],`H = ${fmt(S.H)}`,-26);
-    dim2D(g,[X(0),Y(-45)],[X(totalRun),Y(-45)],`L = ${fmt(totalRun)}`,-24);
-    dim2D(g,[X(0),Y(0)],[X(0),Y(hStep)],`${fmt(hStep)}`,22);
-    dim2D(g,[X(0),Y(hStep+40)],[X(b),Y(hStep+40)],`${b}`,20);
+    dim2D(g,[X(0),Y(-45)],[X(totalRun),Y(-45)],`L = ${fmt1(totalRun)}`,-24);
+    dim2D(g,[X(0),Y(0)],[X(0),Y(hStep)],`h = ${fmt1(hStep)}`,22);
+    dim2D(g,[X(0),Y(hStep+40)],[X(b),Y(hStep+40)],`b = ${fmt1(b)}`,20);
     g.strokeStyle='#2f6fed';g.lineWidth=1.5;
     const r=70,a0=Math.atan2(hStep,b);
     g.beginPath();g.arc(X(0),Y(0),r,-a0,0);g.stroke();
@@ -1063,25 +1114,30 @@ function renderSide(g,w,h){
 }
 
 /* ============================================================
-   СТОИМОСТЬ
+   СПЕЦИФИКАЦИЯ ДЕТАЛЕЙ (без цен)
    ============================================================ */
-function computeCost(){
+function computeParts(){
   const st=M.stats;
-  const fk=FINISH[S.finish]||1;
-  const wood=WOODS[S.wood];
   const rows=[];
-  const R=(name,qty,unit,price)=>{const sum=Math.round(qty*price);rows.push({name,qty,unit,price,sum});return sum;};
-  let mats=0;
-  mats+=R(`Ступени ${wood.name}, ${S.treadT} мм`,st.treadArea,'м²',wood.p*fk);
-  if(S.riser&&st.riserArea>0)mats+=R(`Подступенки ${wood.name}`,st.riserArea,'м²',wood.p*0.55*fk);
-  if(st.landArea>0)mats+=R('Площадка (щит + каркас)',st.landArea,'м²',wood.p*fk+3900);
-  mats+=R(FRAMES[S.frame].name,st.frameLen*2,'м.п.',FRAMES[S.frame].ppm/2);
-  if(S.rail!=='none')mats+=R(`Ограждение: ${RAILS[S.rail].name} (${st.posts} стоек)`,st.railLen,'м.п.',RAILS[S.rail].ppm);
-  const install=Math.round(mats*0.27);
-  const delivery=4900;
-  const total=Math.round((mats+install+delivery)/500)*500;
-  return {rows,mats,install,delivery,total,
-    mass:Math.round(st.treadArea*S.treadT/1000*680 + st.frameLen*2*10.5 + st.posts*4)};
+  const R=(name,qty,unit)=>rows.push({name,qty,unit});
+  R(`Ступень ${matName()}, ${fmt1(D.b)}×${fmt(S.W)}×${S.treadT} мм`,st.treads,'шт');
+  if(S.riser&&st.risers>0)R(`Подступенок ${matName()}, ${fmt1(D.h-S.treadT)}×${fmt(S.W)} мм`,st.risers,'шт');
+  if(st.landArea>0)R('Площадка (щит + опорная рама)',1,'компл.');
+  if(S.type==='spiral'){
+    R('Стойка центральная, труба ⌀120×5',1,'шт');
+    R('Фланец опорный ⌀300, анкеры М12',1,'компл.');
+  }else{
+    R(`${FRAMES[S.frame].name} — заготовки по ${fmt1(st.frameLen)} м.п.`,2,'шт');
+  }
+  if(S.rail!=='none'){
+    R(`Ограждение: ${RAILS[S.rail].name}, H=${S.railH} мм`,Number(st.railLen.toFixed(1)),'м.п.');
+    R('Стойки ограждения',st.posts,'шт');
+    R('Поручень (длина по склону)',Number(st.railLen.toFixed(1)),'м.п.');
+  }
+  R('Крепёж, анкеры, метизы',1,'компл.');
+  R(S.mat==='wood'?`Покрытие: ${FINISHNAME[S.finish]}`:'Грунт + эмаль по металлу',1,'компл.');
+  const mass=Math.round(st.treadArea*S.treadT/1000*(S.mat==='metal'?7850:680) + st.frameLen*2*10.5 + st.posts*4);
+  return {rows,mass};
 }
 
 /* ============================================================
@@ -1093,34 +1149,37 @@ function renderPanels(){
   const comfort=a<=38&&a>=20;
   $('angInfo').textContent=comfort?'комфорт':a<=45?'крутовато':'слишком круто';
   $('angleBadge').style.color=comfort?'var(--ok)':a<=45?'var(--warn)':'var(--err)';
-  $('nBadge').innerHTML=`Подъёмов: <b>${D.n}</b> · h <b>${fmt(D.h)}</b> мм · b <b>${S.b}</b> мм · 2h+b <b>${fmt(D.blondel)}</b>`;
+  $('nBadge').innerHTML=`Ступеней: <b>${D.n}</b> · h <b>${fmt1(D.h)}</b> мм · b <b>${fmt1(D.b)}</b> мм · L <b>${fmt1(D.run)}</b> мм · 2h+b <b>${fmt1(D.blondel)}</b>`;
+  if(document.activeElement!==$('iN'))$('iN').value=D.n;
   const st=M.stats;
   const rows2=[
-    ['Ступеней (тетив/щитов)',`${st.treads} <span class="sub">шт</span>`],
-    ['Подъёмов / подступенок',`${D.n} <span class="sub">/</span> ${fmt(D.h)} <span class="sub">мм</span>`],
-    ['Проступь',`${S.b} <span class="sub">мм</span>`],
+    ['Ступеней (подъёмов)',`${D.n} <span class="sub">шт</span>`],
+    ['Подступенок h',`${fmt1(D.h)} <span class="sub">мм</span>`],
+    ['Проступь b',`${fmt1(D.b)} <span class="sub">мм</span>`],
+    ['Длина по полу (проекция)',`${fmt1(D.run)} <span class="sub">мм</span>`],
     ['Угол наклона',`${D.angle.toFixed(1)}°`],
-    ['Длина марша (тетива)',`${fmt(D.slopeLen)} <span class="sub">мм</span>`],
+    ['Длина марша (тетива)',`${fmt1(D.slopeLen)} <span class="sub">мм</span>`],
     ['Площадь марша',`${D.marchArea.toFixed(2)} <span class="sub">м²</span>`],
-    ['Масса конструкции',`≈ ${fmt(cost.mass)} <span class="sub">кг</span>`],
   ];
-  if(D.head!==null)rows2.push(['Просвет под перекрытием',`${fmt(D.head)} <span class="sub">мм</span>`]);
+  if(S.type==='lshape'||S.type==='ushape'){
+    rows2.push(['Подъёмов до площадки',`${D.landRisers} <span class="sub">шт</span>`]);
+    rows2.push(['Отметка площадки',`${fmt1(D.landY)} <span class="sub">мм</span>`]);
+    rows2.push(['Габарит по полу',`${fmt1(M.foot.x1-M.foot.x0)} × ${fmt1(M.foot.z1-M.foot.z0)} <span class="sub">мм</span>`]);
+  }
   if(S.type==='spiral')rows2.push(['Полный угол поворота',`${Math.round(D.spiralRot)}°`]);
+  rows2.push(['Масса конструкции',`≈ ${fmt(parts.mass)} <span class="sub">кг</span>`]);
+  if(D.head!==null)rows2.push(['Просвет под перекрытием',`${fmt1(D.head)} <span class="sub">мм</span>`]);
   $('paramsTbl').innerHTML=rows2.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
   const ico={ok:'✓',warn:'⚠',err:'✕'};
   $('warnBox').innerHTML=D.warns.map(x=>`<div class="warnitem ${x.lv}"><span class="ic">${ico[x.lv]}</span><span>${x.t}</span></div>`).join('');
-  $('costBox').innerHTML=`
-    <div class="totrow"><span>Материалы</span><b>${fmt(cost.mats)} ₽</b></div>
-    <div class="totrow"><span>Монтаж (27%)</span><b>${fmt(cost.install)} ₽</b></div>
-    <div class="totrow"><span>Доставка</span><b>${fmt(cost.delivery)} ₽</b></div>
-    <div class="total"><span>Итого ≈</span><b>${fmt(cost.total)} ₽</b></div>`;
-  $('geomCalc').innerHTML=`Угол <b>${D.angle.toFixed(1)}°</b> · подъёмов <b>${D.n}</b> · h факт <b>${fmt(D.h)} мм</b> · 2h+b = <b>${fmt(D.blondel)}</b>`;
+  $('partsTbl').innerHTML=parts.rows.map(r=>`<tr><td>${r.name}</td><td>${r.qty} <span class="sub">${r.unit}</span></td></tr>`).join('');
+  $('geomCalc').innerHTML=`Угол <b>${D.angle.toFixed(1)}°</b> · подъёмов <b>${D.n}</b> · h факт <b>${fmt1(D.h)} мм</b> · L по полу <b>${fmt1(D.run)} мм</b> · 2h+b = <b>${fmt1(D.blondel)}</b>`;
 }
 
 /* ============================================================
    ЦИКЛ
    ============================================================ */
-let cost=null, needFit=true;
+let parts=null, needFit=true;
 function fitCamera(){
   const bb=M.bbox;
   cam.target=[bb.cx,bb.cy*0.9,bb.cz];
@@ -1130,7 +1189,7 @@ function fitCamera(){
 function rebuild(refit){
   derive();
   buildModel();
-  cost=computeCost();
+  parts=computeParts();
   if(refit||needFit){fitCamera();needFit=false;}
   syncSliders();
   renderPanels();
@@ -1145,9 +1204,27 @@ function draw(){
 let raf=0;
 function schedule(refit){if(raf)cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>rebuild(refit));}
 
-let drag=null;
-cv.addEventListener('pointerdown',e=>{cv.setPointerCapture(e.pointerId);drag={x:e.clientX,y:e.clientY,b:e.button};});
+let drag=null, pinch=null;
+const ptrs=new Map();
+function pinchState(){
+  const p=[...ptrs.values()];
+  return {d:Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])||1, mx:(p[0][0]+p[1][0])/2, my:(p[0][1]+p[1][1])/2};
+}
+cv.addEventListener('pointerdown',e=>{
+  cv.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+  if(ptrs.size===1)drag={x:e.clientX,y:e.clientY,b:e.button};
+  else{drag=null;pinch=pinchState();}
+});
 cv.addEventListener('pointermove',e=>{
+  if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+  if(pinch&&ptrs.size>=2){
+    const s=pinchState();
+    cam.dist=clamp(cam.dist*(pinch.d/s.d),1200,26000);
+    cam.panX-=(s.mx-pinch.mx)*cam.dist/900;
+    cam.panY+=(s.my-pinch.my)*cam.dist/900;
+    pinch=s;draw();return;
+  }
   if(!drag)return;
   const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
   drag.x=e.clientX;drag.y=e.clientY;
@@ -1155,7 +1232,14 @@ cv.addEventListener('pointermove',e=>{
   else{cam.yaw+=dx*0.0055;cam.pitch=clamp(cam.pitch+dy*0.005,-0.1,1.45);}
   draw();
 });
-cv.addEventListener('pointerup',()=>drag=null);
+function endPtr(e){
+  ptrs.delete(e.pointerId);
+  if(ptrs.size<2)pinch=null;
+  if(ptrs.size===0)drag=null;
+  else if(ptrs.size===1){const p=[...ptrs.values()][0];drag={x:p[0],y:p[1],b:0};}
+}
+cv.addEventListener('pointerup',endPtr);
+cv.addEventListener('pointercancel',endPtr);
 cv.addEventListener('contextmenu',e=>e.preventDefault());
 cv.addEventListener('wheel',e=>{e.preventDefault();cam.dist=clamp(cam.dist*(1+e.deltaY*0.0011),1200,26000);draw();},{passive:false});
 window.addEventListener('keydown',e=>{
@@ -1169,7 +1253,8 @@ new ResizeObserver(draw).observe($('stage'));
    ============================================================ */
 function fillSel(id,obj){const s=$(id);s.innerHTML=Object.entries(obj).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('');}
 fillSel('selWood',WOODS);fillSel('selFrame',FRAMES);fillSel('selRail',RAILS);
-$('swWood').innerHTML=Object.entries(WOODS).map(([k,v])=>`<div class="sw ${k===S.wood?'on':''}" data-w="${k}" title="${v.name} · ${fmt(v.p)} ₽/м²" style="background:rgb(${v.col.join(',')})"></div>`).join('');
+$('swWood').innerHTML=Object.entries(WOODS).map(([k,v])=>`<div class="sw ${k===S.wood?'on':''}" data-w="${k}" title="${v.name}" style="background:rgb(${v.col.join(',')})"></div>`).join('');
+$('selMetal').innerHTML=Object.entries(METALS).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('');
 $('swWood').addEventListener('click',e=>{const sw=e.target.closest('.sw');if(!sw)return;S.wood=sw.dataset.w;document.querySelectorAll('#swWood .sw').forEach(x=>x.classList.toggle('on',x===sw));$('selWood').value=S.wood;schedule(false);});
 
 function num(id,fn){
@@ -1184,8 +1269,10 @@ num('iW',v=>S.W=clamp(v,600,2000));
 num('iB',v=>S.b=clamp(v,200,400));
 num('iT',v=>S.treadT=clamp(v,20,80));
 num('iHT',v=>S.hTarget=clamp(v,130,220));
-num('iN',v=>{S.nManual=clamp(Math.round(v),3,26);});
-num('iOpen',v=>S.openingLen=clamp(v,900,8000));
+num('iN',v=>{S.nManual=clamp(Math.round(v),3,26);if(S.stepMode!=='manual'){S.stepMode='manual';updateModeUI();}});
+num('iL',v=>{S.runTarget=clamp(v,800,12000);});
+num('iNos',v=>{S.nosing=clamp(v,0,45);});
+num('iOpen',v=>S.openingLen=clamp(v,300,12000));
 num('iRH',v=>S.railH=clamp(v,800,1200));
 num('iSD',v=>{S.spiralD=clamp(v,1100,3200);needFit=true;});
 
@@ -1208,20 +1295,74 @@ function syncSliders(){
 $('iOpenOn').addEventListener('change',e=>{S.openingOn=e.target.checked;$('rowOpen').style.display=S.openingOn?'flex':'none';needFit=true;schedule(true);});
 $('iRiser').addEventListener('change',e=>{S.riser=e.target.checked;schedule(false);});
 $('selWood').addEventListener('change',e=>{S.wood=e.target.value;document.querySelectorAll('#swWood .sw').forEach(x=>x.classList.toggle('on',x.dataset.w===S.wood));schedule(false);});
+$('matSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  S.mat=b.dataset.mat;updateMatUI();schedule(false);
+});
+$('selMetal').addEventListener('change',e=>{S.metal=e.target.value;schedule(false);});
+function updateMatUI(){
+  document.querySelectorAll('#matSeg button').forEach(x=>x.classList.toggle('on',x.dataset.mat===S.mat));
+  $('woodBlock').style.display=S.mat==='wood'?'block':'none';
+  $('metalRow').style.display=S.mat==='metal'?'flex':'none';
+  $('selMetal').value=S.metal;
+}
+$('sideBtn').addEventListener('click',()=>{document.body.classList.toggle('sideOpen');document.body.classList.remove('dataOpen');});
+$('dataBtn').addEventListener('click',()=>{document.body.classList.toggle('dataOpen');document.body.classList.remove('sideOpen');});
+$('scrim').addEventListener('click',()=>document.body.classList.remove('sideOpen','dataOpen'));
 $('selFrame').addEventListener('change',e=>{S.frame=e.target.value;schedule(false);});
 $('selFrameCol').addEventListener('change',e=>{S.frameColor=e.target.value;schedule(false);});
 $('selFin').addEventListener('change',e=>{S.finish=e.target.value;schedule(false);});
 $('selRail').addEventListener('change',e=>{S.rail=e.target.value;schedule(false);});
 $('selSide').addEventListener('change',e=>{S.railSide=e.target.value;schedule(false);});
+function updateModeUI(){
+  const m=S.stepMode;
+  $('rowHT').style.display=m==='auto'?'flex':'none';
+  $('rowHT_r').style.display=m==='auto'?'flex':'none';
+  $('rowL').style.display=m==='length'?'flex':'none';
+  const sp=S.type==='spiral';
+  $('rowB').style.display=(sp||m==='length')?'none':'flex';
+  $('rowB_r').style.display=(sp||m==='length')?'none':'flex';
+  document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.m===m));
+}
 $('modeSeg').addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
-  if(b.dataset.m==='manual'&&S.stepMode!=='manual'){S.nManual=D.n;$('iN').value=D.n;}
+  if(b.dataset.m==='manual'&&S.stepMode!=='manual')S.nManual=D.n;
+  if(b.dataset.m==='length'&&S.stepMode!=='length'){S.runTarget=Math.max(800,Math.round(D.run/10)*10);$('iL').value=S.runTarget;}
   S.stepMode=b.dataset.m;
-  document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.toggle('on',x===b));
-  $('rowHT').style.display=S.stepMode==='auto'?'flex':'none';
-  $('rowHT_r').style.display=S.stepMode==='auto'?'flex':'none';
-  $('rowN').style.display=S.stepMode==='manual'?'flex':'none';
-  schedule(false);
+  updateModeUI();schedule(false);
+});
+/* автоподбор оптимальных ступеней по формуле Блонделя */
+$('optBtn').addEventListener('click',()=>{
+  const H=S.H;let best=null;
+  if(S.stepMode==='length'){
+    for(let k=3;k<=26;k++){
+      const hh=H/k,bb=S.runTarget/(k-1);
+      if(hh<140||hh>200||bb<230||bb>360)continue;
+      const sc=Math.abs(2*hh+bb-625);
+      if(!best||sc<best.sc)best={k,sc};
+    }
+    if(best)S.hTarget=Math.round(H/best.k);
+  }else if(S.type==='spiral'){
+    const R=S.spiralD/2,r0=80,rw=r0+(R-r0)*2/3;
+    for(let k=3;k<=26;k++){
+      const hh=H/k,ch=2*rw*Math.sin(Math.PI/k);
+      if(hh<140||hh>200)continue;
+      const sc=Math.abs(2*hh+ch-625);
+      if(!best||sc<best.sc)best={k,sc};
+    }
+    if(best){S.hTarget=Math.round(H/best.k);S.stepMode='auto';}
+  }else{
+    for(let k=3;k<=26;k++){
+      const hh=H/k;
+      if(hh<140||hh>200)continue;
+      const bb=clamp(Math.round(625-2*hh),250,320);
+      const sc=Math.abs(2*hh+bb-625)+(k>18?60:0);
+      if(!best||sc<best.sc)best={k,bb,sc};
+    }
+    if(best){S.hTarget=Math.round(H/best.k);S.b=best.bb;S.stepMode='auto';}
+  }
+  if(best){syncUI();updateModeUI();schedule(false);}
+  else alert('В комфортном диапазоне вариант не найден — измените высоту, длину или тип лестницы.');
 });
 document.querySelectorAll('#typeGrid .tcard').forEach(c=>c.addEventListener('click',()=>{
   S.type=c.dataset.type;
@@ -1238,12 +1379,11 @@ $('fitBtn').addEventListener('click',()=>{cam.yaw=-0.78;cam.pitch=0.46;needFit=t
 
 function applyTypeUI(){
   const sp=S.type==='spiral';
-  $('rowB').style.display=sp?'none':'flex';
-  $('rowB_r').style.display=sp?'none':'flex';
   $('rowSpiral').style.display=sp?'flex':'none';
   $('rowSD_r').style.display=sp?'flex':'none';
   $('rowOpenChk').style.display=S.type==='straight'?'flex':'none';
   $('rowOpen').style.display=S.type==='straight'&&S.openingOn?'flex':'none';
+  updateModeUI();
   const hints={
     straight:'Один марш. Минимум площади, но нужен длинный проём в перекрытии.',
     lshape:'Два марша под 90° с площадкой. Удобна, когда проём у стены.',
@@ -1254,7 +1394,7 @@ function applyTypeUI(){
 }
 
 const PRESETS={
-  floor2800:{type:'straight',H:2800,W:950,b:280,stepMode:'auto',hTarget:165,wood:'oak',frame:'closed',rail:'balusters',railSide:'right',openingOn:true,openingLen:2600},
+  floor2800:{type:'straight',H:2800,W:950,b:280,stepMode:'auto',hTarget:165,wood:'oak',frame:'closed',rail:'balusters',railSide:'right',openingOn:true,openingLen:3700},
   basement:{type:'straight',H:2100,W:900,b:260,stepMode:'auto',hTarget:175,wood:'pine',frame:'closed',rail:'wood',railSide:'right',openingOn:false},
   l3000:{type:'lshape',H:3000,W:950,b:280,stepMode:'auto',hTarget:165,wood:'ash',frame:'stringer',rail:'inox',railSide:'right'},
   u2900:{type:'ushape',H:2900,W:900,b:270,stepMode:'auto',hTarget:165,wood:'oak',frame:'closed',rail:'glass',railSide:'both'},
@@ -1270,57 +1410,108 @@ $('presetSel').addEventListener('change',e=>{
 
 function syncUI(){
   $('iH').value=S.H;$('iW').value=S.W;$('iB').value=S.b;$('iT').value=S.treadT;
-  $('iHT').value=S.hTarget;$('iN').value=S.nManual;$('iOpen').value=S.openingLen;
+  $('iHT').value=S.hTarget;$('iN').value=D.n||S.nManual;$('iOpen').value=S.openingLen;
+  $('iL').value=S.runTarget;$('iNos').value=S.nosing;
   $('iOpenOn').checked=S.openingOn;$('iRiser').checked=S.riser;$('iRH').value=S.railH;$('iSD').value=S.spiralD;
   $('rowOpen').style.display=S.type==='straight'&&S.openingOn?'flex':'none';
-  document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.m===S.stepMode));
-  $('rowHT').style.display=S.stepMode==='auto'?'flex':'none';
-  $('rowHT_r').style.display=S.stepMode==='auto'?'flex':'none';
-  $('rowN').style.display=S.stepMode==='manual'?'flex':'none';
+  updateModeUI();
   document.querySelectorAll('#typeGrid .tcard').forEach(x=>x.classList.toggle('on',x.dataset.type===S.type));
   $('selWood').value=S.wood;$('selFrame').value=S.frame;$('selRail').value=S.rail;$('selFin').value=S.finish;
   $('selFrameCol').value=S.frameColor;$('selSide').value=S.railSide;
   document.querySelectorAll('#swWood .sw').forEach(x=>x.classList.toggle('on',x.dataset.w===S.wood));
+  updateMatUI();
   syncSliders();
 }
 
 /* ============================================================
    ЭКСПОРТ / ДИАЛОГИ
    ============================================================ */
-function specText(){
-  return `${M.stats.type} · H=${S.H} · W=${S.W} · h=${fmt(D.h)} · b=${S.b} · угол ${D.angle.toFixed(1)}° · подъёмов ${D.n} · ${WOODS[S.wood].name} · ${FRAMES[S.frame].name} · ограждение: ${RAILS[S.rail].name} · итого ≈ ${fmt(cost.total)} ₽`;
+/* ============================================================
+   ПЕЧАТНАЯ СПЕЦИФИКАЦИЯ: виды со всех сторон + все данные
+   ============================================================ */
+function offViews(){
+  const shots=[];
+  const saved={yaw:cam.yaw,pitch:cam.pitch,panX:cam.panX,panY:cam.panY,dist:cam.dist};
+  cam.panX=0;cam.panY=0;
+  const iso=[['Перспектива · фронт',-0.78,0.46],['Перспектива · тыл',-0.78+Math.PI,0.46],['Перспектива · слева',-Math.PI/2,0.38],['Перспектива · справа',Math.PI/2,0.38]];
+  for(const[t,yaw,pitch]of iso){
+    cam.yaw=yaw;cam.pitch=pitch;
+    const oc=document.createElement('canvas');oc.width=880;oc.height=620;
+    render3D(oc.getContext('2d'),880,620);
+    shots.push([t,oc.toDataURL('image/png')]);
+  }
+  cam.yaw=saved.yaw;cam.pitch=saved.pitch;
+  const o2=document.createElement('canvas');o2.width=880;o2.height=620;
+  renderPlan(o2.getContext('2d'),880,620);
+  shots.push(['План · вид сверху',o2.toDataURL('image/png')]);
+  const o3=document.createElement('canvas');o3.width=880;o3.height=620;
+  renderSide(o3.getContext('2d'),880,620);
+  shots.push(['Фасад · сбоку (развёртка)',o3.toDataURL('image/png')]);
+  Object.assign(cam,saved);
+  draw();
+  return shots;
 }
-$('estBtn2').addEventListener('click',()=>{
-  const rows=cost.rows.map(r=>`<tr><td>${r.name}</td><td>${r.qty.toFixed(2)} ${r.unit}</td><td>${fmt(r.price)} ₽</td><td>${fmt(r.sum)} ₽</td></tr>`).join('');
-  $('estBody').innerHTML=`
-    <table class="est">
-      <tr><th>Позиция</th><th>Объём</th><th>Цена</th><th>Сумма</th></tr>
-      ${rows}
-      <tr><td colspan="3" style="font-weight:700">Материалы итого</td><td>${fmt(cost.mats)} ₽</td></tr>
-      <tr><td colspan="3">Монтаж (сварка/сборка, 27%)</td><td>${fmt(cost.install)} ₽</td></tr>
-      <tr><td colspan="3">Доставка</td><td>${fmt(cost.delivery)} ₽</td></tr>
-      <tr class="grand"><td colspan="3">Итого, ≈</td><td>${fmt(cost.total)} ₽</td></tr>
-    </table>
-    <p class="disc" style="margin-top:12px">Масса конструкции ≈ ${fmt(cost.mass)} кг. Расчёт укрупнённый, не является публичной офертой. Нажмите «🖨 Спецификация» для печати полного листа с чертежами.</p>`;
-  $('mEst').showModal();
-});
-function openOrder(){
-  $('ordSum').innerHTML=`<b>${M.stats.type}</b><br>${specText()}`;
-  $('mOrder').showModal();
+function paramsTableHTML(){
+  const rows=[
+    ['Тип лестницы',M.stats.type],
+    ['Высота подъёма H',fmt1(S.H)+' мм'],
+    ['Ступеней (подъёмов)',D.n+' шт'],
+    ['Подступенок h (точный)',fmt1(D.h)+' мм'],
+    ['Проступь b (точная)',fmt1(D.b)+' мм'],
+    ['Свес ступени',S.nosing+' мм'],
+    ['Длина по полу L',fmt1(D.run)+' мм'],
+    ['Длина тетивы/косоура',fmt1(D.slopeLen)+' мм'],
+    ['Угол наклона',D.angle.toFixed(2)+'°'],
+    ['Формула 2h+b',fmt1(D.blondel)+' мм'],
+    ['Ширина марша W',S.W+' мм'],
+    ['Толщина ступени',S.treadT+' мм'],
+    ['Габарит по полу',`${fmt1(M.foot.x1-M.foot.x0)} × ${fmt1(M.foot.z1-M.foot.z0)} мм`],
+  ];
+  if(D.head!==null)rows.push(['Просвет под перекрытием',fmt1(D.head)+' мм']);
+  if(S.type==='spiral')rows.push(['Полный поворот',Math.round(D.spiralRot)+'°']);
+  rows.push(['Материал ступеней',matName()+', '+S.treadT+' мм']);
+  rows.push(['Каркас',FRAMES[S.frame].name]);
+  rows.push(['Цвет каркаса',{graphite:'графит',black:'чёрный мат',white:'белый',met:'металлик'}[S.frameColor]]);
+  rows.push(['Покрытие',S.mat==='wood'?FINISHNAME[S.finish]:'грунт-эмаль по металлу']);
+  rows.push(['Ограждение',RAILS[S.rail].name+`, H=${S.railH} мм`]);
+  return `<table>${rows.map(r=>`<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join('')}</table>`;
 }
-$('orderBtn').addEventListener('click',openOrder);
-$('orderBtn2').addEventListener('click',openOrder);
-$('ordSend').addEventListener('click',()=>{
-  const name=$('ordName').value.trim(),phone=$('ordPhone').value.trim();
-  if(!name||!phone){alert('Укажите имя и телефон');return;}
-  const ord={date:new Date().toISOString(),name,phone,note:$('ordNote').value,state:S,spec:specText(),total:cost.total};
-  try{
-    const all=JSON.parse(localStorage.getItem('lp_orders')||'[]');all.push(ord);
-    localStorage.setItem('lp_orders',JSON.stringify(all));
-  }catch(e){}
-  downloadFile(`zayavka-lestpro-${Date.now()}.json`,JSON.stringify(ord,null,2));
-  $('mOrder').close();
-  alert(`Спасибо, ${name}! Заявка сохранена и выгружена файлом. Мы свяжемся с вами по ${phone}.`);
+function stepsTableHTML(){
+  return `<table><tr><th>№ ступени</th><th>Отметка верха, мм</th><th>Шаг h, мм</th><th>Глубина b, мм</th></tr>${
+    D.steps.map(s=>`<tr><td>${s.i}${D.landRisers&&s.i===D.landRisers?' (площадка)':''}</td><td style="text-align:right">+${fmt1(s.y)}</td><td style="text-align:right">${fmt1(D.h)}</td><td style="text-align:right">${fmt1(D.b)}</td></tr>`).join('')
+  }<tr><th>Верхний этаж</th><td style="text-align:right">+${fmt1(S.H)}</td><td></td><td></td></tr></table>`;
+}
+function partsTableHTML(){
+  return `<table><tr><th>Позиция</th><th>Кол-во</th></tr>${parts.rows.map(r=>`<tr><td>${r.name}</td><td style="text-align:right">${r.qty} ${r.unit}</td></tr>`).join('')}
+  <tr class="grand"><td>Масса конструкции ≈</td><td style="text-align:right">${fmt(parts.mass)} кг</td></tr></table>`;
+}
+$('printBtn').addEventListener('click',()=>{
+  const shots=offViews();
+  const imgs=shots.map(([t,d])=>`<figure><img src="${d}"><figcaption>${t}</figcaption></figure>`).join('');
+  $('sheet').innerHTML=`
+    <h1>ЛестПро · спецификация лестницы</h1>
+    <div class="subline">${new Date().toLocaleDateString('ru-RU')} · ${M.stats.type} · все размеры в мм</div>
+    <h2>1. Виды со всех сторон</h2>
+    <div class="pgrid">${imgs}</div>
+    <h2>2. Основные параметры</h2>
+    ${paramsTableHTML()}
+    <h2>3. Ведомость ступеней (точные отметки)</h2>
+    ${stepsTableHTML()}
+    <h2>4. Спецификация деталей и материалов</h2>
+    ${partsTableHTML()}
+    <h2>5. Проверка норм</h2>
+    <ul class="norms">${D.warns.map(x=>`<li>${x.lv==='ok'?'✓':x.lv==='warn'?'⚠':'✕'} ${x.t}</li>`).join('')}</ul>
+    <h2>6. Примечания к изготовлению</h2>
+    <ol>
+      <li>Разметку ступеней вести по ведомости (п.3) с точностью 0,1 мм; контроль первых трёх и последних двух ступеней обязательный.</li>
+      <li>Заготовка тетивы/косоура — ${fmt1(D.slopeLen)} мм прямого участка, запил под угол ${D.angle.toFixed(2)}°.</li>
+      ${S.type==='lshape'||S.type==='ushape'?`<li>Площадка на отметке +${fmt1(D.landY)} мм; опорные стойки с подпятниками — по месту.</li>`:''}
+      <li>Ограждение монтировать после установки ступеней; крайние стойки крепить анкерами М10.</li>
+      <li>Сварные швы зачистить; каркас загрунтовать и окрасить в цвет «${{graphite:'графит',black:'чёрный мат',white:'белый',met:'металлик'}[S.frameColor]}».</li>
+      <li>Допуски сборки: шаг ступеней ±1 мм, диагонали марша ±3 мм, просвет под перекрытием ≥ 2000 мм.</li>
+    </ol>
+    <div class="foot">ЛестПро v1.3 · конфигурация сохраняется кнопкой «💾 Сохранить» (JSON)</div>`;
+  setTimeout(()=>window.print(),200);
 });
 function downloadFile(name,text){
   const a=document.createElement('a');
@@ -1339,23 +1530,6 @@ $('pngBtn').addEventListener('click',()=>{
   if(S.view==='3d')render3D(og,1800,1300);else if(S.view==='plan')renderPlan(og,1800,1300);else renderSide(og,1800,1300);
   const a=document.createElement('a');a.download=`lestpro-${S.view}.png`;a.href=oc.toDataURL('image/png');a.click();
 });
-$('printBtn').addEventListener('click',()=>{
-  const planC=document.createElement('canvas');planC.width=1000;planC.height=760;
-  renderPlan(planC.getContext('2d'),1000,760);
-  const sideC=document.createElement('canvas');sideC.width=1000;sideC.height=760;
-  renderSide(sideC.getContext('2d'),1000,760);
-  const p=`<h1>ЛестПро · спецификация лестницы</h1><div>${new Date().toLocaleDateString('ru-RU')} · ${M.stats.type}</div>
-  <div class="pimgs"><img src="${planC.toDataURL()}"><img src="${sideC.toDataURL()}"></div>
-  <table>${[['Высота этажа',S.H+' мм'],['Ширина марша',S.W+' мм'],['Проступь b',S.b+' мм'],['Подступенок h',fmt(D.h)+' мм'],['Подъёмов',D.n],['Угол',D.angle.toFixed(1)+'°'],['2h+b',fmt(D.blondel)+' мм'],['Длина марша',fmt(D.slopeLen)+' мм'],['Ступени',`${WOODS[S.wood].name}, ${S.treadT} мм`],['Каркас',FRAMES[S.frame].name],['Ограждение',RAILS[S.rail].name+', '+S.railH+' мм'],['Масса ≈',fmt(cost.mass)+' кг']].map(r=>`<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join('')}</table>
-  <table><tr><th>Позиция</th><th>Объём</th><th>Сумма</th></tr>${cost.rows.map(r=>`<tr><td>${r.name}</td><td>${r.qty.toFixed(2)} ${r.unit}</td><td style="text-align:right">${fmt(r.sum)} ₽</td></tr>`).join('')}
-  <tr><th>Монтаж + доставка</th><th></th><th style="text-align:right">${fmt(cost.install+cost.delivery)} ₽</th></tr>
-  <tr><th>ИТОГО ≈</th><th></th><th style="text-align:right">${fmt(cost.total)} ₽</th></tr></table>
-  <p style="color:#666">Проверка норм: ${D.warns.map(x=>(x.lv==='ok'?'✓ ':x.lv==='warn'?'⚠ ':'✕ ')+x.t).join(' · ')}</p>
-  <p style="color:#999">Предварительный расчёт, не является офертой.</p>`;
-  $('sheet').innerHTML=p;
-  setTimeout(()=>window.print(),150);
-});
-
 setInterval(()=>{try{localStorage.setItem('lp_state',JSON.stringify(S));}catch(e){}},1500);
 try{const s=localStorage.getItem('lp_state');if(s)Object.assign(S,JSON.parse(s));}catch(e){}
 
