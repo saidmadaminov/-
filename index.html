@@ -1,0 +1,1539 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ЛестПро — профессиональный конфигуратор лестниц</title>
+<style>
+:root{
+  --bg:#eef1f6; --card:#ffffff; --ink:#1b2534; --mut:#5f6c80; --line:#e3e8f0;
+  --acc:#2f6fed; --acc2:#eaf1ff; --ok:#1f9d61; --warn:#e08a00; --err:#e5484d;
+  --rad:14px; --shadow:0 1px 2px rgba(16,24,40,.05), 0 6px 20px -6px rgba(16,24,40,.12);
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{height:100%}
+body{font:14px/1.45 "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; background:var(--bg); color:var(--ink); overflow:hidden}
+button{font:inherit; cursor:pointer}
+input,select{font:inherit}
+
+header{height:54px; display:flex; align-items:center; gap:10px; padding:0 14px; background:#fff; border-bottom:1px solid var(--line); position:relative; z-index:20}
+.logo{display:flex; align-items:center; gap:9px; font-weight:700; font-size:16px}
+.logo .mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#2f6fed,#7a4df0);display:flex;align-items:center;justify-content:center;color:#fff}
+.logo small{display:block;font-weight:500;color:var(--mut);font-size:11px}
+.hspace{flex:1}
+.hbtn{border:1px solid var(--line); background:#fff; border-radius:9px; padding:7px 12px; font-weight:600; color:var(--ink); display:inline-flex; align-items:center; gap:6px; transition:.15s}
+.hbtn:hover{border-color:#c8d4e8; background:#f7f9fd}
+.hbtn.primary{background:var(--acc); border-color:var(--acc); color:#fff}
+.hbtn.primary:hover{background:#265fd0}
+
+#app{display:flex; height:calc(100% - 54px)}
+aside#side{width:332px; min-width:332px; background:#fff; border-right:1px solid var(--line); overflow-y:auto; padding:12px}
+aside#right{width:322px; min-width:322px; background:#fff; border-left:1px solid var(--line); overflow-y:auto; padding:12px; display:flex; flex-direction:column; gap:12px}
+main{flex:1; display:flex; flex-direction:column; min-width:0; padding:12px}
+#stage{flex:1; position:relative; background:linear-gradient(180deg,#f8fafc,#e7edf5); border-radius:var(--rad); box-shadow:var(--shadow); overflow:hidden; min-height:200px; cursor:grab; user-select:none}
+#stage:active{cursor:grabbing}
+canvas#cv{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none}
+
+#toolbar{display:flex; align-items:center; gap:8px; margin-bottom:10px; flex-wrap:wrap}
+.tabs{display:flex; background:#fff; border:1px solid var(--line); border-radius:11px; padding:3px; gap:2px; box-shadow:var(--shadow)}
+.tabs button{border:0; background:transparent; border-radius:8px; padding:7px 16px; font-weight:600; color:var(--mut)}
+.tabs button.on{background:var(--acc); color:#fff}
+.pill{border:1px solid var(--line); background:#fff; border-radius:11px; padding:8px 14px; font-weight:600; color:var(--mut); box-shadow:var(--shadow)}
+.pill.on{color:var(--acc); border-color:#b9cdf6; background:var(--acc2)}
+
+#angleBadge{position:absolute; left:14px; top:12px; background:rgba(255,255,255,.92); border:1px solid var(--line); border-radius:10px; padding:6px 12px; font-weight:700; font-size:15px; box-shadow:var(--shadow); z-index:5}
+#angleBadge small{color:var(--mut); font-weight:600; margin-left:6px}
+#hint{position:absolute; right:14px; bottom:12px; color:#8b98ab; font-size:12px; background:rgba(255,255,255,.85); padding:5px 10px; border-radius:8px; z-index:5}
+#nBadge{position:absolute; left:14px; bottom:12px; background:rgba(255,255,255,.92); border:1px solid var(--line); border-radius:10px; padding:6px 12px; font-size:13px; font-weight:600; color:var(--mut); z-index:5}
+#nBadge b{color:var(--ink)}
+
+details.grp{border:1px solid var(--line); border-radius:12px; margin-bottom:10px; background:#fff}
+details.grp>summary{list-style:none; cursor:pointer; padding:11px 13px; font-weight:700; display:flex; align-items:center; gap:8px; user-select:none}
+details.grp>summary::-webkit-details-marker{display:none}
+.grpbody{padding:2px 13px 13px; border-top:1px solid var(--line)}
+.row{display:flex; align-items:center; gap:8px; margin-top:10px}
+.row label{flex:0 0 120px; color:var(--mut); font-size:13px}
+.row .u{color:#9aa7ba; font-size:12px; width:26px}
+input[type=number],select{width:100%; border:1px solid var(--line); border-radius:8px; padding:7px 9px; background:#fbfcfe; outline:none}
+input[type=number]:focus,select:focus{border-color:var(--acc); background:#fff}
+input[type=range]{accent-color:var(--acc); width:100%; padding:0}
+.row.slider{margin-top:2px}
+.row.slider input{margin-left:128px}
+.seg{display:flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; width:100%}
+.seg button{flex:1; border:0; background:#fbfcfe; padding:7px 4px; font-weight:600; color:var(--mut); font-size:12.5px}
+.seg button.on{background:var(--acc); color:#fff}
+.hintline{font-size:12px; color:var(--mut); margin-top:8px; line-height:1.4}
+.calc{background:#f4f7fd; border-radius:9px; padding:8px 10px; margin-top:10px; font-size:12.5px; color:var(--mut); line-height:1.5}
+.calc b{color:var(--ink)}
+.typegrid{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px}
+.tcard{border:1.5px solid var(--line); border-radius:11px; padding:10px 6px 8px; text-align:center; background:#fbfcfe; transition:.12s}
+.tcard:hover{border-color:#b9cdf6}
+.tcard.on{border-color:var(--acc); background:var(--acc2)}
+.tcard svg{display:block; margin:0 auto 6px}
+.tcard span{font-size:12.5px; font-weight:600}
+.swatches{display:flex; gap:6px; margin-top:8px; flex-wrap:wrap}
+.sw{width:26px; height:26px; border-radius:8px; border:2px solid transparent; cursor:pointer; outline:1px solid rgba(0,0,0,.08)}
+.sw.on{border-color:var(--acc)}
+.chk{display:flex; align-items:center; gap:8px; margin-top:10px; cursor:pointer; color:var(--mut)}
+.chk input{accent-color:var(--acc); width:16px; height:16px}
+
+.card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 13px}
+.card h3{font-size:13px; text-transform:uppercase; letter-spacing:.5px; color:var(--mut); margin-bottom:9px}
+.kv{width:100%; border-collapse:collapse; font-size:13px}
+.kv td{padding:4.5px 0; border-bottom:1px dashed #edf1f7}
+.kv td:last-child{text-align:right; font-weight:700; font-variant-numeric:tabular-nums}
+.kv tr:last-child td{border-bottom:0}
+.kv .sub{color:var(--mut); font-weight:400; font-size:12px}
+.warnitem{display:flex; gap:8px; padding:6px 8px; border-radius:8px; font-size:12.5px; margin-bottom:5px; line-height:1.35; align-items:flex-start}
+.warnitem .ic{font-weight:800; flex:0 0 14px}
+.warnitem.err{background:#fdeeee} .warnitem.err .ic{color:var(--err)}
+.warnitem.warn{background:#fdf5e7} .warnitem.warn .ic{color:var(--warn)}
+.warnitem.ok{background:#edf9f2} .warnitem.ok .ic{color:var(--ok)}
+.total{display:flex; justify-content:space-between; align-items:baseline; margin-top:8px; padding-top:9px; border-top:1.5px solid var(--ink)}
+.total b{font-size:21px; font-variant-numeric:tabular-nums}
+.totrow{display:flex; justify-content:space-between; font-size:13px; padding:3px 0; color:var(--mut)}
+.totrow b{color:var(--ink)}
+.bigbtn{width:100%; margin-top:10px; border:0; background:var(--acc); color:#fff; border-radius:10px; padding:11px; font-weight:700; font-size:14px}
+.bigbtn:hover{background:#265fd0}
+.bigbtn.ghost{background:#fff; color:var(--acc); border:1.5px solid var(--acc)}
+.disc{font-size:11px; color:#9aa7ba; margin-top:8px; line-height:1.4}
+
+dialog{border:0; border-radius:16px; padding:0; width:min(720px, 94vw); max-height:88vh; box-shadow:0 24px 80px -12px rgba(16,24,40,.35)}
+dialog::backdrop{background:rgba(15,22,36,.45)}
+.dhead{display:flex; align-items:center; padding:16px 20px; border-bottom:1px solid var(--line); position:sticky; top:0; background:#fff; border-radius:16px 16px 0 0; z-index:2}
+.dhead h2{font-size:17px}
+.dhead .x{margin-left:auto; border:0; background:#f1f4f9; width:32px; height:32px; border-radius:9px; font-size:15px; color:var(--mut)}
+.dbody{padding:16px 20px; overflow:auto}
+table.est{width:100%; border-collapse:collapse; font-size:13px}
+table.est th{text-align:left; color:var(--mut); font-size:11.5px; text-transform:uppercase; letter-spacing:.4px; padding:6px 8px; border-bottom:1.5px solid var(--line)}
+table.est td{padding:7px 8px; border-bottom:1px solid #eef1f7; font-variant-numeric:tabular-nums}
+table.est td:last-child,table.est th:last-child{text-align:right; white-space:nowrap}
+table.est tr.grand td{font-size:16px; font-weight:800; border-top:2px solid var(--ink); border-bottom:0}
+.fgrid{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+.fgrid .full{grid-column:1/-1}
+.fld label{display:block; font-size:12.5px; color:var(--mut); margin-bottom:5px; font-weight:600}
+.fld input,.fld textarea{width:100%; border:1px solid var(--line); border-radius:9px; padding:9px 11px}
+.fld textarea{resize:vertical; min-height:70px}
+#ordSum{background:#f4f7fd; border-radius:10px; padding:10px 12px; font-size:12.5px; color:var(--mut); line-height:1.5; margin-bottom:14px}
+#ordSum b{color:var(--ink)}
+
+#sheet{display:none}
+@media print{
+  body{overflow:visible; background:#fff}
+  header,#app,dialog,#scrim,#errdiv{display:none !important}
+  #sheet{display:block; padding:20px 24px; font-size:12px; color:#111}
+  #sheet h1{font-size:19px; margin-bottom:2px}
+  #sheet h2{font-size:14px; margin:16px 0 6px; border-bottom:1.5px solid #333; padding-bottom:3px}
+  #sheet .subline{color:#555; margin-bottom:8px}
+  #sheet .pgrid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  #sheet figure{margin:0}
+  #sheet img{width:100%; border:1px solid #999; border-radius:4px}
+  #sheet figcaption{font-size:11px; color:#444; padding-top:2px}
+  #sheet table{width:100%; border-collapse:collapse; margin:8px 0}
+  #sheet td,#sheet th{border:1px solid #999; padding:4px 8px; text-align:left}
+  #sheet th{background:#eef1f6}
+  #sheet ul.norms{margin:6px 0 6px 18px}
+  #sheet ol{margin:6px 0 6px 18px; line-height:1.5}
+  #sheet .foot{margin-top:14px; color:#888; font-size:10px}
+  #sheet tr.grand td{font-weight:800}
+}
+
+#errdiv{display:none; position:fixed; inset:auto 10px 10px 10px; background:#2b1113; color:#ffd7d9; border-radius:10px; padding:12px 14px; z-index:999; font:12px/1.5 Consolas,monospace; max-height:40vh; overflow:auto; white-space:pre-wrap}
+#scrim{display:none; position:fixed; inset:0; background:rgba(15,22,36,.45); z-index:35}
+.panelbtn{display:none}
+@media (max-width:1250px){ aside#right{width:280px; min-width:280px} aside#side{width:300px; min-width:300px} }
+@media (max-width:1020px){
+  #app{display:block; height:calc(100% - 54px); position:relative; overflow:hidden}
+  main{height:100%; padding:8px}
+  aside#side, aside#right{
+    position:absolute; top:0; bottom:0; width:min(88vw,360px); min-width:0; max-height:none;
+    z-index:40; transition:transform .25s ease; box-shadow:0 12px 40px rgba(16,24,40,.3); overflow-y:auto;
+  }
+  aside#side{left:0; border-right:1px solid var(--line); transform:translateX(-105%)}
+  aside#right{right:0; border-left:1px solid var(--line); transform:translateX(105%)}
+  body.sideOpen aside#side{transform:none}
+  body.dataOpen aside#right{transform:none}
+  body.sideOpen #scrim, body.dataOpen #scrim{display:block}
+  .panelbtn{display:inline-flex}
+  .tabs button{padding:10px 14px}
+  .pill{padding:10px 12px}
+  #hint{display:none}
+  #angleBadge{top:8px; left:8px; padding:5px 10px}
+  #nBadge{left:8px; bottom:8px; max-width:calc(100% - 16px); font-size:11.5px; padding:5px 9px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="mark">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M3 21h4v-4h4v-4h4V9h4V5h2" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div>ЛестПро<small>конфигуратор лестниц · v1.3</small></div>
+  </div>
+  <div class="hspace"></div>
+  <select id="presetSel" style="width:auto; border:1px solid var(--line); border-radius:9px; padding:7px 9px; background:#fff; font-weight:600">
+    <option value="">Пресеты…</option>
+    <option value="floor2800">Межэтажная · прямая · 2800</option>
+    <option value="basement">В подвал · 2100</option>
+    <option value="l3000">Г-образная · 3000</option>
+    <option value="u2900">П-образная · 2900</option>
+    <option value="spiral">Винтовая · ⌀1700</option>
+    <option value="attic">Чердачная · эконом</option>
+  </select>
+  <button class="hbtn" id="saveBtn" title="Скачать конфигурацию JSON">💾 Сохранить</button>
+  <button class="hbtn" id="loadBtn" title="Загрузить конфигурацию">📂 Открыть</button>
+  <input type="file" id="loadFile" accept=".json" style="display:none">
+  <button class="hbtn" id="pngBtn">🖼 PNG</button>
+  <button class="hbtn" id="printBtn">🖨 Спецификация</button>
+</header>
+
+<div id="app">
+  <aside id="side">
+
+    <details class="grp" open>
+      <summary>Тип лестницы</summary>
+      <div class="grpbody">
+        <div class="typegrid" id="typeGrid">
+          <button class="tcard on" data-type="straight" title="Прямая одномаршевая">
+            <svg width="52" height="34" viewBox="0 0 52 34"><path d="M2 32h8v-6h8v-6h8v-6h8V8h8V2h8" fill="none" stroke="#2f6fed" stroke-width="2.4"/></svg>
+            <span>Прямая</span>
+          </button>
+          <button class="tcard" data-type="lshape" title="Г-образная с площадкой">
+            <svg width="52" height="34" viewBox="0 0 52 34"><path d="M2 32h6v-6h6v-6h6v-6h6V8h14v24" fill="none" stroke="#2f6fed" stroke-width="2.4" stroke-linejoin="round"/></svg>
+            <span>Г-образная</span>
+          </button>
+          <button class="tcard" data-type="ushape" title="П-образная с площадкой">
+            <svg width="52" height="34" viewBox="0 0 52 34"><path d="M2 32h6v-6h6v-6h6v-6h6v-6h26M26 8v26" fill="none" stroke="#2f6fed" stroke-width="2.4" stroke-linejoin="round"/></svg>
+            <span>П-образная</span>
+          </button>
+          <button class="tcard" data-type="spiral" title="Винтовая лестница">
+            <svg width="52" height="34" viewBox="0 0 52 34"><circle cx="26" cy="17" r="13" fill="none" stroke="#2f6fed" stroke-width="2.2"/><circle cx="26" cy="17" r="3.4" fill="#2f6fed"/><path d="M26 17L39 8M26 17l12 10" stroke="#2f6fed" stroke-width="1.6"/></svg>
+            <span>Винтовая</span>
+          </button>
+        </div>
+        <div class="hintline" id="typeHint"></div>
+      </div>
+    </details>
+
+    <details class="grp" open>
+      <summary>Основные размеры</summary>
+      <div class="grpbody">
+        <div class="row"><label>Высота этажа</label><input type="number" id="iH" min="1500" max="6000" step="50"><span class="u">мм</span></div>
+        <div class="row slider"><input type="range" id="iH_r" min="1500" max="6000" step="50"></div>
+        <div class="row"><label>Ширина марша</label><input type="number" id="iW" min="600" max="2000" step="25"><span class="u">мм</span></div>
+        <div class="row slider"><input type="range" id="iW_r" min="600" max="2000" step="25"></div>
+        <div class="row" id="rowB"><label>Проступь (глубина)</label><input type="number" id="iB" min="200" max="400" step="5"><span class="u">мм</span></div>
+        <div class="row slider" id="rowB_r"><input type="range" id="iB_r" min="220" max="350" step="5"></div>
+        <div class="row" id="rowSpiral" style="display:none"><label>Диаметр</label><input type="number" id="iSD" min="1100" max="3200" step="50"><span class="u">мм</span></div>
+        <div class="row slider" id="rowSD_r" style="display:none"><input type="range" id="iSD_r" min="1100" max="3200" step="50"></div>
+        <div class="row"><label>Толщина ступени</label><input type="number" id="iT" min="20" max="80" step="5"><span class="u">мм</span></div>
+        <div class="row" id="rowOpenChk"><label>Проём над лестницей</label><input type="checkbox" id="iOpenOn" style="width:16px;height:16px;accent-color:var(--acc)"></div>
+        <div class="row" id="rowOpen" style="display:none"><label>Длина проёма (от верха)</label><input type="number" id="iOpen" min="300" max="12000" step="10"><span class="u">мм</span></div>
+        <div class="calc" id="geomCalc"></div>
+      </div>
+    </details>
+
+    <details class="grp" open>
+      <summary>Ступени</summary>
+      <div class="grpbody">
+        <div class="row"><label>Подбор числа</label>
+          <div class="seg" id="modeSeg"><button data-m="auto" class="on">Авто</button><button data-m="length">По длине</button><button data-m="manual">Точно N</button></div>
+        </div>
+        <div class="row" id="rowL" style="display:none"><label>Длина марша (пол)</label><input type="number" id="iL" min="800" max="12000" step="10"><span class="u">мм</span></div>
+        <div class="row" id="rowHT"><label>Подступенок цель</label><input type="number" id="iHT" min="130" max="220" step="1"><span class="u">мм</span></div>
+        <div class="row slider" id="rowHT_r"><input type="range" id="iHT_r" min="140" max="200" step="1"></div>
+        <div class="row" id="rowN"><label>Ступеней (подъёмов)</label><input type="number" id="iN" min="3" max="26" step="1"><span class="u">шт</span></div>
+        <div class="row"><label>Свес ступени</label><input type="number" id="iNos" min="0" max="45" step="5"><span class="u">мм</span></div>
+        <label class="chk"><input type="checkbox" id="iRiser" checked> Подступенки (закрытые ступени)</label>
+        <button class="bigbtn ghost" id="optBtn" style="margin-top:12px">✨ Подобрать оптимально</button>
+        <div class="hintline">Формула безопасности (Блондель): <b>2h + b = 600–650 мм</b>. Все расчёты — с точностью 0,1 мм.</div>
+      </div>
+    </details>
+
+    <details class="grp" open>
+      <summary>Материалы</summary>
+      <div class="grpbody">
+        <div class="row"><label>Материал</label>
+          <div class="seg" id="matSeg"><button data-mat="wood" class="on">Дерево</button><button data-mat="metal">Металл</button></div>
+        </div>
+        <div id="woodBlock">
+          <div class="row"><label>Порода</label><select id="selWood"></select></div>
+          <div class="swatches" id="swWood"></div>
+        </div>
+        <div class="row" id="metalRow" style="display:none"><label>Настил</label><select id="selMetal"></select></div>
+        <div class="row"><label>Каркас</label><select id="selFrame"></select></div>
+        <div class="row"><label>Цвет каркаса</label><select id="selFrameCol">
+          <option value="graphite">Графит</option><option value="black">Чёрный мат</option><option value="white">Белый</option><option value="met">Металлик</option>
+        </select></div>
+        <div class="row"><label>Покрытие</label><select id="selFin">
+          <option value="oil">Масло-воск</option><option value="lak">Лак матовый</option><option value="ton">Тонирование</option><option value="white">Белое (сканд.)</option>
+        </select></div>
+      </div>
+    </details>
+
+    <details class="grp" open>
+      <summary>Ограждение</summary>
+      <div class="grpbody">
+        <div class="row"><label>Тип</label><select id="selRail"></select></div>
+        <div class="row"><label id="lblSide">Сторона</label><select id="selSide">
+          <option value="right">По правую руку</option><option value="left">По левую руку</option><option value="both">С двух сторон</option>
+        </select></div>
+        <div class="row"><label>Высота огражд.</label><input type="number" id="iRH" min="800" max="1200" step="50"><span class="u">мм</span></div>
+      </div>
+    </details>
+
+  </aside>
+
+  <main>
+    <div id="toolbar">
+      <div class="tabs">
+        <button data-view="3d" class="on">3D</button>
+        <button data-view="plan">2D · сверху</button>
+        <button data-view="side">2D · сбоку</button>
+      </div>
+      <button class="pill panelbtn" id="sideBtn">⚙ Параметры</button>
+      <button class="pill on" id="dimsTgl">📏 Размеры</button>
+      <button class="pill" id="fitBtn">⤢ Вписать вид</button>
+      <button class="pill panelbtn" id="dataBtn">📊 Данные</button>
+    </div>
+    <div id="stage">
+      <canvas id="cv"></canvas>
+      <div id="angleBadge">∠ <span id="angVal">30°</span><small id="angInfo">комфорт</small></div>
+      <div id="nBadge"></div>
+      <div id="hint">ЛКМ — вращение · колесо/щипок — масштаб · Shift+ЛКМ — панорама · R — вписать</div>
+    </div>
+  </main>
+
+  <aside id="right">
+    <div class="card">
+      <h3>⚙ Расчёт марша</h3>
+      <table class="kv" id="paramsTbl"></table>
+    </div>
+    <div class="card">
+      <h3>✓ Нормы и безопасность</h3>
+      <div id="warnBox"></div>
+    </div>
+    <div class="card">
+      <h3>🔩 Спецификация деталей</h3>
+      <table class="kv" id="partsTbl"></table>
+      <div class="disc">Полный лист со всеми видами и размерами — кнопка «🖨 Спецификация» вверху.</div>
+    </div>
+  </aside>
+</div>
+
+<div id="scrim"></div>
+<div id="errdiv"></div>
+<div id="sheet"></div>
+
+<script>
+"use strict";
+window.addEventListener('error', e=>{
+  const d=document.getElementById('errdiv'); d.style.display='block';
+  d.textContent+=(e.message+'\n  at '+(e.filename||'')+':'+(e.lineno||'')+'\n');
+});
+
+/* ---------- справочники ---------- */
+const WOODS={
+  pine:{name:'Сосна', p:4200, col:[213,178,126], dark:[176,138,86]},
+  birch:{name:'Берёза', p:5600, col:[229,211,172], dark:[190,168,124]},
+  larch:{name:'Лиственница', p:6400, col:[206,161,107], dark:[168,124,74]},
+  ash:{name:'Ясень', p:8800, col:[226,203,161], dark:[184,158,112]},
+  oak:{name:'Дуб', p:11800, col:[192,148,97], dark:[150,109,66]},
+};
+const FRAMES={
+  closed:{name:'Закрытый каркас (профтруба 100×50)', ppm:4900},
+  stringer:{name:'Косоур ломанный / швеллер', ppm:5400},
+  mono:{name:'Монолитная тетива (двойная)', ppm:6100},
+};
+const RAILS={
+  wood:{name:'Деревянные балясины + поручень', ppm:5600},
+  balusters:{name:'Кованые балясины + дуб. поручень', ppm:6400},
+  inox:{name:'Нержавеющая сталь', ppm:7400},
+  glass:{name:'Стекло закалённое 10 мм', ppm:8800},
+  none:{name:'Без ограждения', ppm:0},
+};
+const METALS={
+  steel:{name:'Рифлёная сталь', col:[168,172,178], dark:[122,126,132]},
+  grate:{name:'Решётчатый настил', col:[140,146,154], dark:[100,105,112]},
+};
+const FINISHNAME={oil:'масло-воск', lak:'лак матовый', ton:'тонирование', white:'эмаль белая'};
+const FRAMECOLS={graphite:[56,62,70], black:[36,38,42], white:[232,234,237], met:[145,151,160]};
+const INOX=[188,196,205];
+
+/* ---------- состояние ---------- */
+const S={
+  type:'straight', H:2800, W:950, b:280, treadT:40, riser:true, nosing:25,
+  stepMode:'auto', hTarget:165, nManual:17, runTarget:3000,
+  openingOn:false, openingLen:3700,
+  spiralD:1700,
+  mat:'wood', wood:'oak', metal:'steel', frame:'closed', frameColor:'graphite', finish:'oil',
+  rail:'balusters', railSide:'right', railH:900,
+  view:'3d', showDims:true,
+};
+const D={};
+let M={prims:[],dims:[],stats:null,plan:{},foot:null,bbox:null};
+const cam={yaw:-0.78, pitch:0.46, dist:5200, target:[1500,900,500], panX:0, panY:0};
+
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const fmt=n=>Math.round(n).toLocaleString('ru-RU');
+const fmt1=n=>n.toLocaleString('ru-RU',{minimumFractionDigits:0,maximumFractionDigits:1});
+const $=id=>document.getElementById(id);
+function treadCols(){
+  return S.mat==='metal' ? METALS[S.metal] : WOODS[S.wood];
+}
+function matName(){
+  return S.mat==='metal' ? METALS[S.metal].name : WOODS[S.wood].name;
+}
+
+/* ============================================================
+   ПРОИЗВОДНЫЕ + НОРМЫ
+   ============================================================ */
+function derive(){
+  const H=S.H;
+  D.warns=[];
+  const add=(lv,t)=>D.warns.push({lv,t});
+  /* --- число подъёмов и проступь: авто / точно N / по длине марша --- */
+  let n,b;
+  if(S.stepMode==='length'){
+    let best=null;
+    for(let k=3;k<=26;k++){
+      const hh=H/k, bb=S.runTarget/(k-1);
+      if(hh<130||hh>230||bb<200||bb>400)continue;
+      const sc=Math.abs(2*hh+bb-625)+(hh<145||hh>200?150:0);
+      if(!best||sc<best.sc)best={k,sc};
+    }
+    n=best?best.k:clamp(Math.round(H/S.hTarget),3,26);
+    b=S.runTarget/(n-1);            // точная проступь под заданную длину
+  }else{
+    n=S.stepMode==='auto'?clamp(Math.round(H/S.hTarget),3,26):clamp(Math.round(S.nManual),3,26);
+    b=S.b;
+  }
+  const h=H/n;
+  D.n=n; D.h=h; D.b=b;
+  D.run=(n-1)*b;                    // точная длина по полу
+  D.angle=Math.atan2(h,b)*180/Math.PI;
+  D.blondel=2*h+b;
+  D.slopeLen=Math.hypot(D.run,H);
+  D.marchArea=S.W*D.slopeLen/1e6;
+  D.landRisers=(S.type==='lshape'||S.type==='ushape')?Math.ceil(n/2):0;
+  D.landY=D.landRisers?D.landRisers*h:0;
+  D.steps=[];
+  for(let i=1;i<=n;i++)D.steps.push({i,y:i*h});
+  if(h<150) add(h<130?'err':'warn',`Подступенок ${fmt1(h)} мм — ${h<130?'опасно низкий':'ниже комфортного диапазона'} (норма 150–200 мм).`);
+  else if(h>200) add(h>220?'err':'warn',`Подступенок ${fmt1(h)} мм — выше нормы 200 мм (макс. 220 для внутриквартирных).`);
+  else add('ok',`Подступенок ${fmt1(h)} мм — в норме.`);
+  if(b<250) add(b<230?'err':'warn',`Проступь ${fmt1(b)} мм — меньше рекомендованных 250–320 мм.`);
+  else if(b>330) add('warn',`Проступь ${fmt1(b)} мм — великовата (норма 250–320 мм).`);
+  else add('ok',`Проступь ${fmt1(b)} мм — в норме.`);
+  if(D.blondel<560||D.blondel>660) add('warn',`Блондель 2h+b = ${fmt1(D.blondel)} мм — вне комфортных 600–650 мм.`);
+  else add('ok',`2h+b = ${fmt1(D.blondel)} мм — «золотой шаг».`);
+  if(D.angle>45) add('err',`Угол ${D.angle.toFixed(1)}° — круто даже для чердака (макс. 45°).`);
+  else if(D.angle>38) add('warn',`Угол ${D.angle.toFixed(1)}° — крутовато, комфорт до 38°.`);
+  else if(D.angle<20) add('warn',`Угол ${D.angle.toFixed(1)}° — очень полого, марш длинный.`);
+  else add('ok',`Угол наклона ${D.angle.toFixed(1)}° — комфортно.`);
+  if(S.W<800) add(S.W<700?'err':'warn',`Ширина марша ${S.W} мм — для основного подъёма нужно ≥ 900 мм.`);
+  else add('ok',`Ширина марша ${S.W} мм.`);
+  if(S.type==='straight' && n>18) add('warn',`Подъёмов ${n} > 18 — СП требует промежуточную площадку (возьмите Г/П-образную).`);
+  D.head=null; D.minOpen=null;
+  if(S.type==='straight' && S.openingOn){
+    const edge=D.run-clamp(S.openingLen,300,D.run);
+    if(edge>30){
+      const i=clamp(Math.ceil(edge/b-1e-9),1,n);
+      D.head=H-200-i*h;
+      const imax=Math.floor((H-2200)/h);
+      if(imax>=1)D.minOpen=Math.max(0,Math.ceil((D.run-b*imax)/10)*10);
+      if(D.head<2000) add('err',`Просвет под перекрытием = ${fmt1(D.head)} мм < 2000 мм${D.minOpen>0?` — нужен проём ≥ ${fmt(D.minOpen)} мм`:' — прямой марш не проходит, возьмите Г/П-образную'}.`);
+      else if(D.head<2100) add('warn',`Просвет = ${fmt1(D.head)} мм — впритык (норма ≥ 2000 мм).`);
+      else add('ok',`Просвет под перекрытием = ${fmt1(D.head)} мм.`);
+    } else add('ok','Проём перекрывает весь марш — просвет не ограничен.');
+  }
+  if(S.railH<900) add('warn',`Высота ограждения ${S.railH} мм < 900 мм по СП 1.13330.`);
+  D.spiralRot=0;
+  if(S.type==='spiral'){
+    const R=S.spiralD/2, r0=80, rw=r0+(R-r0)*2/3;
+    const chord=2*rw*Math.sin(Math.PI/n);
+    if(chord<240) add('warn',`Проступь на линии ходьбы ≈ ${fmt1(chord)} мм — маловато (≥ 250 мм).`);
+    const narrow=2*(r0+150)*Math.sin(Math.PI/n);
+    if(narrow<220) add('warn',`Ширина ступени в 150 мм от стойки ≈ ${fmt1(narrow)} мм — узко (норма ≥ 250 мм).`);
+    D.spiralRot=n*(2*Math.asin(Math.min(1,b/(2*rw))))*180/Math.PI;
+  }
+}
+
+/* ============================================================
+   МОДЕЛЬ. org всегда [x,z]; dir=[dx,dz]; perp=(-dz,dx)
+   ============================================================ */
+function addBox(o){M.prims.push(Object.assign({kind:'box'},o))}
+function addPrism(o){M.prims.push(Object.assign({kind:'prism'},o))}
+function addCyl(o){M.prims.push(Object.assign({kind:'cyl'},o))}
+function addMesh(o){M.prims.push(Object.assign({kind:'mesh'},o))}
+function loc(org,dir,s,u,y){return [org[0]+dir[0]*s-dir[1]*u, y, org[1]+dir[1]*s+dir[0]*u]}
+
+function segBox(p0,p1,size,col,role){
+  const a=[p1[0]-p0[0],p1[1]-p0[1],p1[2]-p0[2]];
+  const L=Math.hypot(a[0],a[1],a[2]); if(L<1)return;
+  const an=[a[0]/L,a[1]/L,a[2]/L];
+  const u=Math.abs(an[1])>0.9?[1,0,0]:[0,1,0];
+  const un=[u[1]*an[2]-u[2]*an[1], u[2]*an[0]-u[0]*an[2], u[0]*an[1]-u[1]*an[0]];
+  const vn=[an[1]*un[2]-an[2]*un[1], an[2]*un[0]-an[0]*un[2], an[0]*un[1]-an[1]*un[0]];
+  const s=size/2, c=[(p0[0]+p1[0])/2,(p0[1]+p1[1])/2,(p0[2]+p1[2])/2];
+  const v=[];
+  for(const su of[-s,s])for(const sv of[-s,s])for(const sa of[-L/2,L/2])
+    v.push([c[0]+un[0]*su+vn[0]*sv+an[0]*sa, c[1]+un[1]*su+vn[1]*sv+an[1]*sa, c[2]+un[2]*su+vn[2]*sv+an[2]*sa]);
+  addMesh({v, f:[[0,1,3,2],[4,6,7,5],[0,4,5,1],[2,3,7,6],[0,2,6,4],[1,5,7,3]], col, role});
+}
+
+function closedProfile(n,baseY){
+  const h=D.h,b=D.b,nos=S.nosing,p=[];const L=(n-1)*b;
+  p.push([-70,baseY]);p.push([-70,baseY+90]);
+  for(let i=1;i<n;i++){const y=baseY+i*h-80,s0=(i-1)*b-15,s1=i*b+nos-15;
+    p.push([s0,y]);p.push([s1,y]);p.push([s1,y+80]);}
+  p.push([L+70,baseY+n*h]);
+  p.push([L+70,baseY]);
+  return p;
+}
+function stringerProfile(n,baseY){
+  const h=D.h,b=D.b,L=(n-1)*b;
+  const th=Math.atan2(n*h,L), d=270, dx=-Math.sin(th)*d, dy=-Math.cos(th)*d;
+  const ax=-40, ay=baseY+h-70, bx=L+70, by=baseY+n*h-70;
+  return [[ax,baseY],[ax,ay],[bx,by],[bx+dx,Math.max(baseY,by+dy)],[ax+dx,Math.max(baseY,ay+dy)],[ax,baseY]];
+}
+
+function addFlight(o){
+  const {org,dir,baseY,risers,W}=o, h=D.h,b=D.b,t=S.treadT,nos=S.nosing;
+  const wood=treadCols().col, frameCol=FRAMECOLS[S.frameColor];
+  const yaw=Math.atan2(dir[1],dir[0]);
+  const L=(risers-1)*b;
+  for(let i=1;i<risers;i++){
+    const top=baseY+i*h;
+    const c=loc(org,dir,(i-1)*b+(b+nos)/2-nos, W/2, top-t/2);
+    addBox({c, s:[b+nos,t,W], yaw, col:wood, role:'tread'});
+  }
+  if(S.frame==='closed'){
+    addPrism({prof:closedProfile(risers,baseY), org, dir, u0:35, u1:70, col:frameCol, role:'frame'});
+    addPrism({prof:closedProfile(risers,baseY), org, dir, u0:W-70, u1:W-35, col:frameCol, role:'frame'});
+  }else if(S.frame==='stringer'){
+    const p=stringerProfile(risers,baseY);
+    addPrism({prof:p, org, dir, u0:35, u1:100, col:frameCol, role:'frame'});
+    addPrism({prof:p, org, dir, u0:W-100, u1:W-35, col:frameCol, role:'frame'});
+  }else{
+    addPrism({prof:[[-60,baseY],[L+60,baseY],[L+60,baseY+risers*h-60],[0,baseY+h-60]], org, dir, u0:20, u1:W-20, col:frameCol, role:'frame'});
+  }
+  M.stats.treads+=risers-1;
+  M.stats.treadArea+=W*(b+nos)/1e6*(risers-1);
+  const sl=Math.hypot(L,risers*h)/1000;
+  M.stats.frameLen+=sl; M.stats.walkLen+=sl;
+}
+function addRisers(o){
+  if(!S.riser)return;
+  const {org,dir,baseY,risers,W}=o,h=D.h,b=D.b,t=S.treadT;
+  const woodD=treadCols().dark, yaw=Math.atan2(dir[1],dir[0]);
+  for(let i=1;i<risers;i++){
+    const yTop=baseY+i*h, yBot=baseY+(i-1)*h;
+    const c=loc(org,dir,(i-1)*b+10, W/2, yBot+(yTop-yBot-t)/2);
+    addBox({c, s:[20,yTop-yBot-t,W], yaw, col:woodD, role:'riser'});
+  }
+  M.stats.risers+=risers-1;
+  M.stats.riserArea+=W*(h-t)/1e6*(risers-1);
+}
+function railColors(){
+  const woodD=WOODS[S.wood].dark;
+  const steel=(S.rail==='inox'||S.rail==='glass')?INOX:FRAMECOLS[S.frameColor];
+  const railCol=S.rail==='wood'?woodD:steel;
+  return {railCol, postCol:S.rail==='wood'?woodD:steel};
+}
+function addRailFlight(o,sides){
+  if(S.rail==='none')return;
+  const {org,dir,baseY,risers,W}=o,h=D.h,b=D.b,nos=S.nosing,hr=S.railH;
+  const L=(risers-1)*b;
+  const {railCol,postCol}=railColors();
+  for(const side of sides){
+    const u = side==='u0'? 40 : W-40;
+    const pts=[loc(org,dir,-10,u,baseY+h)];
+    for(let i=1;i<risers;i++) pts.push(loc(org,dir,i*b-25,u,baseY+i*h));
+    pts.push(loc(org,dir,L+40,u,baseY+risers*h));
+    if(S.rail!=='glass'){
+      const step=(S.rail==='wood'||S.rail==='balusters')?1:2;
+      for(let i=0;i<pts.length;i+=step){
+        const p=pts[i];
+        addBox({c:[p[0],p[1]+hr/2,p[2]], s:[S.rail==='wood'?55:40,hr,55], col:postCol, role:'rail'});
+        M.stats.posts++;
+      }
+    }else{
+      for(let i=0;i<pts.length;i+=3){
+        const p=pts[i];
+        addBox({c:[p[0],p[1]+hr/2,p[2]], s:[45,hr,45], col:INOX, role:'rail'});
+        M.stats.posts++;
+      }
+      const prof=[[-10,baseY+h+60],[L+40,baseY+risers*h+60],[L+40,baseY+risers*h+hr-40],[-10,baseY+h+hr-40]];
+      addPrism({prof, org, dir, u0:side==='u0'?22:W-32, u1:side==='u0'?32:W-22, col:[168,205,220], alpha:.42, role:'glass'});
+    }
+    if(S.rail==='balusters'||S.rail==='wood'){
+      for(const hh of [Math.round(hr*0.4),Math.round(hr*0.72)]){
+        const a=pts[0],c=pts[pts.length-1];
+        segBox([a[0],a[1]+hh,a[2]],[c[0],c[1]+hh,c[2]],S.rail==='wood'?45:22,railCol,'rail');
+      }
+    }
+    if(S.rail==='inox'){
+      const a=pts[0],c=pts[pts.length-1];
+      segBox([a[0],a[1]+hr*0.5,a[2]],[c[0],c[1]+hr*0.5,c[2]],25,railCol,'rail');
+    }
+    const a=pts[0],c=pts[pts.length-1];
+    segBox([a[0],a[1]+hr-15,a[2]],[c[0],c[1]+hr-15,c[2]],S.rail==='wood'?65:55,railCol,'rail');
+    M.stats.railLen+=Math.hypot(c[0]-a[0],c[1]-a[1],c[2]-a[2])/1000;
+  }
+}
+function addRailEdge(x0,z0,x1,z1,yTop){
+  if(S.rail==='none')return;
+  const hr=S.railH;
+  const {railCol,postCol}=railColors();
+  const len=Math.hypot(x1-x0,z1-z0); if(len<80)return;
+  const n=Math.max(1,Math.ceil(len/900));
+  for(let i=0;i<=n;i++){
+    const t=i/n;
+    addBox({c:[x0+(x1-x0)*t, yTop+hr/2, z0+(z1-z0)*t], s:[40,hr,40], col:postCol, role:'rail'});
+    M.stats.posts++;
+  }
+  if(S.rail==='balusters'||S.rail==='wood')
+    for(const hh of [Math.round(hr*0.4),Math.round(hr*0.72)])
+      segBox([x0,yTop+hh,z0],[x1,yTop+hh,z1],S.rail==='wood'?45:22,railCol,'rail');
+  if(S.rail==='glass'){
+    for(let i=0;i<n;i++){
+      const t0=i/n,t1=(i+1)/n;
+      addMesh({v:[[x0+(x1-x0)*t0,yTop+40,z0+(z1-z0)*t0],[x0+(x1-x0)*t1,yTop+40,z0+(z1-z0)*t1],[x0+(x1-x0)*t1,yTop+hr-40,z0+(z1-z0)*t1],[x0+(x1-x0)*t0,yTop+hr-40,z0+(z1-z0)*t0]],f:[[0,1,2,3]],col:[168,205,220],alpha:.42,role:'glass'});
+    }
+  }
+  segBox([x0,yTop+hr-15,z0],[x1,yTop+hr-15,z1],55,railCol,'rail');
+  M.stats.railLen+=len/1000;
+}
+function addNewel(x,z,y0,y1){
+  if(S.rail==='none')return;
+  const {postCol}=railColors();
+  addBox({c:[x,(y0+y1)/2,z], s:[60,y1-y0,60], col:postCol, role:'rail'});
+  M.stats.posts++;
+}
+function addFloors(bb){
+  const pad=700;
+  addBox({c:[(bb.x0+bb.x1)/2, -20, (bb.z0+bb.z1)/2], s:[bb.x1-bb.x0+2*pad,40,bb.z1-bb.z0+2*pad], col:[228,232,238], role:'slab'});
+}
+
+/* ---------- типы ---------- */
+function buildStraight(){
+  const n=D.n,h=D.h,b=D.b,W=S.W,L=D.run;
+  addFlight({org:[0,0],dir:[1,0],baseY:0,risers:n,W});
+  addRisers({org:[0,0],dir:[1,0],baseY:0,risers:n,W});
+  const sides=S.railSide==='both'?['u1','u0']:S.railSide==='right'?['u1']:['u0'];
+  addRailFlight({org:[0,0],dir:[1,0],baseY:0,risers:n,W},sides);
+  // перекрытие верхнего этажа: пол прибытия всегда; над нижней частью марша — если проём короче марша
+  addBox({c:[L+450, S.H-100, W/2], s:[900,200,W+300], col:[219,224,232], role:'slab', alpha:.97});
+  if(S.openingOn){
+    const edge=L-clamp(S.openingLen,300,L);
+    if(edge>60)addBox({c:[(edge-80)/2, S.H-100, W/2], s:[edge+80,200,W+300], col:[219,224,232], role:'slab', alpha:.97});
+  }
+  const x1=L+1100;
+  M.bbox={x0:-250,x1,z0:-350,z1:W+350,y0:0,y1:S.H+250};
+  M.plan={x0:-350,z0:-450,x1:x1+350,z1:W+450};
+  M.foot={x0:0,x1:L,z0:0,z1:W};
+  M.dims.push({a:[-170,0,W/2],b:[-170,S.H,W/2],label:`H = ${fmt(S.H)}`});
+  M.dims.push({a:[0,0,-200],b:[L,0,-200],label:`L = ${fmt1(L)}`});
+  M.dims.push({a:[L+170,0,0],b:[L+170,0,W],label:`W = ${fmt(W)}`});
+  M.dims.push({a:[b*1.1,h,-340],b:[b*2.1,h,-340],label:`b = ${fmt1(b)}`});
+  M.dims.push({a:[b*2.1,0,-340],b:[b*2.1,h,-340],label:`h = ${fmt1(h)}`});
+  M.stats.type='Прямая одномаршевая';
+}
+function buildL(){
+  const n=D.n,h=D.h,b=D.b,W=S.W;
+  const n1=Math.ceil(n/2),n2=n-n1;
+  const L1=(n1-1)*b, L2=(n2-1)*b;
+  const landW=W, landY=n1*h;
+  const frameCol=FRAMECOLS[S.frameColor];
+  const f1={org:[0,0],dir:[1,0],baseY:0,risers:n1,W};
+  const f2={org:[L1+landW,W],dir:[0,1],baseY:landY,risers:n2,W};
+  addFlight(f1); addRisers(f1);
+  addBox({c:[L1+landW/2, landY-45, W/2], s:[landW,90,W], col:WOODS[S.wood].col, role:'landing'});
+  M.stats.landArea+=landW*W/1e6;
+  addBox({c:[L1+landW-70, landY/2, 70], s:[80,landY,80], col:frameCol, role:'frame'});
+  addBox({c:[L1+landW-70, landY/2, W-70], s:[80,landY,80], col:frameCol, role:'frame'});
+  addFlight(f2); addRisers(f2);
+  const right=S.railSide!=='left', left=S.railSide!=='right';
+  if(right){ // внутренняя цепь: марш1 право → угловой столб D → марш2 внутренняя
+    addRailFlight(f1,['u1']);
+    addRailFlight(f2,['u1']);
+    addNewel(L1+45, W-45, landY, landY+S.railH+40);
+  }
+  if(left){ // внешняя цепь: марш1 лево → края площадки → марш2 внешняя
+    addRailFlight(f1,['u0']);
+    addRailFlight(f2,['u0']);
+    addRailEdge(L1+40,40,L1+landW-40,40,landY);
+    addRailEdge(L1+landW-40,40,L1+landW-40,W-40,landY);
+  }
+  M.bbox={x0:-250,x1:L1+landW+250,z0:-350,z1:W+L2+350,y0:0,y1:S.H+250};
+  M.plan={x0:-350,z0:-450,x1:L1+landW+350,z1:W+L2+450};
+  M.foot={x0:0,x1:L1+landW,z0:0,z1:W+L2};
+  M.dims.push({a:[-170,0,0],b:[-170,S.H,0],label:`H = ${fmt(S.H)}`});
+  M.dims.push({a:[0,0,-200],b:[L1+landW,0,-200],label:`A = ${fmt(L1+landW)}`});
+  M.dims.push({a:[L1+landW+170,0,0],b:[L1+landW+170,0,W+L2],label:`B = ${fmt(W+L2)}`});
+  M.stats.type='Г-образная с площадкой';
+}
+function buildU(){
+  const n=D.n,h=D.h,b=D.b,W=S.W,gap=60;
+  const n1=Math.ceil(n/2),n2=n-n1;
+  const L1=(n1-1)*b;
+  const landD=2*W+gap, landW=W, landY=n1*h;
+  const frameCol=FRAMECOLS[S.frameColor];
+  const f1={org:[0,0],dir:[1,0],baseY:0,risers:n1,W};
+  const f2={org:[L1+landW,landD],dir:[-1,0],baseY:landY,risers:n2,W};
+  addFlight(f1); addRisers(f1);
+  addBox({c:[L1+landW/2, landY-45, landD/2], s:[landW,90,landD], col:WOODS[S.wood].col, role:'landing'});
+  M.stats.landArea+=landW*landD/1e6;
+  addBox({c:[L1+landW-70, landY/2, 70], s:[80,landY,80], col:frameCol, role:'frame'});
+  addBox({c:[L1+landW-70, landY/2, landD-70], s:[80,landY,80], col:frameCol, role:'frame'});
+  addFlight(f2); addRisers(f2);
+  const well=S.railSide!=='left';   // правая рука при подъёме — внутренний контур
+  const outer=S.railSide!=='right';
+  if(well){
+    addRailFlight(f1,['u1']);
+    addRailFlight(f2,['u1']);
+    addRailEdge(L1+40,W,L1+landW-40,W,landY);
+    addRailEdge(L1+40,W+gap,L1+landW-40,W+gap,landY);
+  }
+  if(outer){
+    addRailFlight(f1,['u0']);
+    addRailFlight(f2,['u0']);
+    addRailEdge(L1+40,40,L1+landW-40,40,landY);
+    addRailEdge(L1+landW-40,40,L1+landW-40,landD-40,landY);
+  }
+  M.bbox={x0:-250,x1:L1+landW+250,z0:-350,z1:landD+350,y0:0,y1:S.H+250};
+  M.plan={x0:-350,z0:-450,x1:L1+landW+350,z1:landD+450};
+  M.foot={x0:0,x1:L1+landW,z0:0,z1:landD};
+  M.dims.push({a:[-170,0,0],b:[-170,S.H,0],label:`H = ${fmt(S.H)}`});
+  M.dims.push({a:[0,0,-200],b:[L1+landW,0,-200],label:`A = ${fmt(L1+landW)}`});
+  M.dims.push({a:[L1+landW+170,0,0],b:[L1+landW+170,0,landD],label:`B = ${fmt(landD)}`});
+  M.stats.type='П-образная с площадкой';
+}
+function buildSpiral(){
+  const n=D.n,h=D.h,R=S.spiralD/2,r0=80;
+  const rw=r0+(R-r0)*2/3;
+  const alfa=2*Math.asin(Math.min(1,D.b/(2*rw)));
+  const wood=treadCols().col, woodD=treadCols().dark;
+  const frameCol=FRAMECOLS[S.frameColor];
+  const t=S.treadT, K=5;
+  const railPts=[];
+  for(let i=1;i<n;i++){
+    const a0=(i-1)*alfa, a1=i*alfa;
+    const top=i*h;
+    const ring=[];
+    for(let k=0;k<=K;k++){const a=a0+(a1-a0)*k/K; ring.push([Math.cos(a)*R, top, Math.sin(a)*R]);}
+    for(let k=K;k>=0;k--){const a=a0+(a1-a0)*k/K; ring.push([Math.cos(a)*r0, top, Math.sin(a)*r0]);}
+    const Rn=ring.length;
+    const cx=Math.cos((a0+a1)/2)*(R+r0)/2, cz=Math.sin((a0+a1)/2)*(R+r0)/2;
+    const v=[[cx,top,cz],...ring.map(p=>[p[0],top,p[2]]),...ring.map(p=>[p[0],top-t,p[2]])];
+    const f=[];
+    for(let k=1;k<Rn;k++)f.push([0,k,k+1]);
+    f.push([0,Rn,1]);
+    for(let k=1;k<Rn;k++)f.push([k,k+1,Rn+k+1,Rn+k]);
+    f.push([Rn,1,Rn+1,2*Rn]);
+    addMesh({v,f,col:wood,role:'tread',plan:ring.map(p=>[p[0],p[2]])});
+    M.stats.treads++;
+    M.stats.treadArea+=((alfa*R*R/2)-(alfa*r0*r0/2))/1e6;
+    if(S.riser){
+      const rr=[];
+      for(let k=0;k<=4;k++){const r=r0+(R-r0)*k/4; rr.push([Math.cos(a0)*r,0,Math.sin(a0)*r]);}
+      addMesh({v:[...rr.map(p=>[p[0],top-t,p[2]]),...rr.map(p=>[p[0],top-h,p[2]])],
+               f:[[0,1,2,3,4],[5,6,7,8,9],[0,1,6,5],[1,2,7,6],[2,3,8,7],[3,4,9,8],[4,0,5,9]],col:woodD,role:'riser'});
+    }
+    railPts.push([Math.cos(a1)*R, top, Math.sin(a1)*R]);
+  }
+  if(S.riser)M.stats.risers+=n-1, M.stats.riserArea+=(Math.PI*R*R-Math.PI*r0*r0)*((n-1)*alfa/(2*Math.PI))/1e6*0.5;
+  addCyl({x:0,z:0,y0:0,y1:S.H+40,r:60,col:frameCol,role:'frame'});
+  addCyl({x:0,z:0,y0:0,y1:14,r:150,col:frameCol,role:'frame'});
+  M.stats.frameLen+=S.H/1000;
+  M.stats.walkLen+=(n-1)*D.b/1000;
+  if(S.rail!=='none' && railPts.length>1){
+    const hr=S.railH;
+    const {railCol,postCol}=railColors();
+    const pts=[[R,h,0],...railPts];
+    if(S.rail==='glass'){
+      for(let i=1;i<pts.length;i++){
+        const a=pts[i-1],q=pts[i];
+        addMesh({v:[[a[0],a[1]+60,a[2]],[q[0],q[1]+60,q[2]],[q[0],q[1]+hr-40,q[2]],[a[0],a[1]+hr-40,a[2]]],f:[[0,1,2,3]],col:[168,205,220],alpha:.42,role:'glass'});
+        M.stats.posts++;
+      }
+    }else{
+      for(const p of pts){
+        addBox({c:[p[0],p[1]+hr/2,p[2]],s:[40,hr,40],col:postCol,role:'rail'});
+        M.stats.posts++;
+      }
+    }
+    for(let i=1;i<pts.length;i++){
+      const a=pts[i-1],q=pts[i];
+      segBox([a[0],a[1]+hr-15,a[2]],[q[0],q[1]+hr-15,q[2]],55,railCol,'rail');
+      if(S.rail==='balusters'||S.rail==='wood')
+        segBox([a[0],a[1]+hr*0.45,a[2]],[q[0],q[1]+hr*0.45,q[2]],22,railCol,'rail');
+      M.stats.railLen+=Math.hypot(q[0]-a[0],q[1]-a[1],q[2]-a[2])/1000;
+    }
+  }
+  M.bbox={x0:-R-300,x1:R+300,z0:-R-300,z1:R+300,y0:0,y1:S.H+250};
+  M.plan={x0:-R-400,z0:-R-400,x1:R+400,z1:R+400};
+  M.foot={x0:-R,x1:R,z0:-R,z1:R};
+  M.dims.push({a:[-R-170,0,0],b:[R+170,0,0],label:`⌀ = ${fmt(S.spiralD)}`});
+  M.dims.push({a:[0,0,-R-170],b:[0,S.H,-R-170],label:`H = ${fmt(S.H)}`});
+  M.stats.type='Винтовая на стойке';
+}
+function buildModel(){
+  M={prims:[],dims:[],plan:{},bbox:null,foot:null,
+     stats:{treads:0,treadArea:0,risers:0,riserArea:0,railLen:0,frameLen:0,posts:0,landArea:0,walkLen:0}};
+  if(S.type==='straight')buildStraight();
+  else if(S.type==='lshape')buildL();
+  else if(S.type==='ushape')buildU();
+  else buildSpiral();
+  const bb=M.bbox;
+  addFloors(bb);
+  bb.cx=(bb.x0+bb.x1)/2; bb.cy=(bb.y0+bb.y1)/2; bb.cz=(bb.z0+bb.z1)/2;
+  bb.size=Math.max(bb.x1-bb.x0,bb.y1-bb.y0,bb.z1-bb.z0);
+}
+
+/* ============================================================
+   3D РЕНДЕР
+   ============================================================ */
+const cv=$('cv'); const ctx=cv.getContext('2d');
+let CW=0,CH=0,DPR=1;
+function fitCanvas(){
+  DPR=window.devicePixelRatio||1;
+  const r=cv.getBoundingClientRect();
+  if(cv.width!==Math.round(r.width*DPR)||cv.height!==Math.round(r.height*DPR)){
+    cv.width=Math.round(r.width*DPR); cv.height=Math.round(r.height*DPR);
+  }
+  CW=r.width; CH=r.height;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+function toCam(p){
+  const T=cam.target;
+  const x=p[0]-T[0]+cam.panX, y=p[1]-T[1]+cam.panY, z=p[2]-T[2];
+  const cy=Math.cos(cam.yaw), sy=Math.sin(cam.yaw);
+  const x1=x*cy - z*sy, z1=x*sy + z*cy;
+  const cp=Math.cos(cam.pitch), sp=Math.sin(cam.pitch);
+  return [x1, y*cp - z1*sp, y*sp + z1*cp + cam.dist];
+}
+function proj(c){
+  if(c[2]<80)return null;
+  const f=CH*1.35;
+  return [CW/2 + c[0]*f/c[2], CH/2 - c[1]*f/c[2]];
+}
+let LIGHT=[-0.45,0.85,0.38].map(x=>x/Math.hypot(0.45,0.85,0.38));
+function shade(col,nrm,alpha){
+  const k=nrm?0.60+0.40*Math.abs(nrm[0]*LIGHT[0]+nrm[1]*LIGHT[1]+nrm[2]*LIGHT[2]):1;
+  return `rgba(${Math.min(255,col[0]*k)|0},${Math.min(255,col[1]*k)|0},${Math.min(255,col[2]*k)|0},${alpha==null?1:alpha})`;
+}
+function primFaces(p,faces){
+  if(p.kind==='box'){
+    const [cx,cy,cz]=p.c,[w,h,d]=p.s,yaw=p.yaw||0;
+    const c=Math.cos(yaw),s=Math.sin(yaw);
+    const pt=(x,y,z)=>[cx+x*c+z*s, cy+y, cz+x*s+z*c];
+    const x=w/2,y=h/2,z=d/2;
+    const v=[pt(-x,-y,-z),pt(x,-y,-z),pt(x,y,-z),pt(-x,y,-z),pt(-x,-y,z),pt(x,-y,z),pt(x,y,z),pt(-x,y,z)];
+    for(const f of[[0,1,2,3],[4,5,6,7],[0,1,5,4],[3,2,6,7],[1,2,6,5],[0,3,7,4]])
+      faces.push({v:f.map(i=>v[i]),col:p.col,alpha:p.alpha,role:p.role});
+  }else if(p.kind==='cyl'){
+    const N=16;
+    for(let i=0;i<N;i++){
+      const a0=i/N*2*Math.PI,a1=(i+1)/N*2*Math.PI;
+      faces.push({v:[[p.x+Math.cos(a0)*p.r,p.y0,p.z+Math.sin(a0)*p.r],[p.x+Math.cos(a1)*p.r,p.y0,p.z+Math.sin(a1)*p.r],[p.x+Math.cos(a1)*p.r,p.y1,p.z+Math.sin(a1)*p.r],[p.x+Math.cos(a0)*p.r,p.y1,p.z+Math.sin(a0)*p.r]],col:p.col,role:p.role});
+    }
+    const disc=[];for(let i=0;i<N;i++){const a=i/N*2*Math.PI;disc.push([p.x+Math.cos(a)*p.r,p.y1,p.z+Math.sin(a)*p.r]);}
+    faces.push({v:disc,col:p.col,role:p.role});
+  }else if(p.kind==='prism'){
+    const perp=[-p.dir[1],p.dir[0]];
+    const W2=(s,u,y)=>[p.org[0]+p.dir[0]*s+perp[0]*u, y, p.org[1]+p.dir[1]*s+perp[1]*u];
+    const A=p.prof.map(q=>W2(q[0],p.u0,q[1]));
+    const B=p.prof.map(q=>W2(q[0],p.u1,q[1]));
+    for(let i=0;i<p.prof.length;i++){
+      const j=(i+1)%p.prof.length;
+      faces.push({v:[A[i],A[j],B[j],B[i]],col:p.col,alpha:p.alpha,role:p.role});
+    }
+    faces.push({v:A,col:p.col,alpha:p.alpha,role:p.role});
+    faces.push({v:B,col:p.col,alpha:p.alpha,role:p.role});
+  }else if(p.kind==='mesh'){
+    for(const f of p.f)faces.push({v:f.map(i=>p.v[i]),col:p.col,alpha:p.alpha,role:p.role});
+  }
+}
+function normOf(v){
+  const a=[v[1][0]-v[0][0],v[1][1]-v[0][1],v[1][2]-v[0][2]];
+  const b=[v[2][0]-v[0][0],v[2][1]-v[0][1],v[2][2]-v[0][2]];
+  const nn=[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+  const L=Math.hypot(nn[0],nn[1],nn[2])||1;
+  return [nn[0]/L,nn[1]/L,nn[2]/L];
+}
+function drawGround(g){
+  const T=cam.target, E=4200;
+  const base=[T[0]-cam.panX, 0, T[2]-cam.panY];
+  const corners=[[-E,-E],[E,-E],[E,E],[-E,E]].map(([x,z])=>proj(toCam([base[0]+x,0,base[2]+z])));
+  if(corners.every(Boolean)){
+    g.beginPath();g.moveTo(corners[0][0],corners[0][1]);
+    for(let i=1;i<4;i++)g.lineTo(corners[i][0],corners[i][1]);
+    g.closePath(); g.fillStyle='#e6ebf3'; g.fill();
+  }
+  g.strokeStyle='#d8dfe9'; g.lineWidth=1;
+  for(let i=-8;i<=8;i++){
+    const a=proj(toCam([base[0]+i*500,0,base[2]-4000])), b=proj(toCam([base[0]+i*500,0,base[2]+4000]));
+    const c2=proj(toCam([base[0]-4000,0,base[2]+i*500])), d2=proj(toCam([base[0]+4000,0,base[2]+i*500]));
+    if(a&&b){g.beginPath();g.moveTo(a[0],a[1]);g.lineTo(b[0],b[1]);g.stroke();}
+    if(c2&&d2){g.beginPath();g.moveTo(c2[0],c2[1]);g.lineTo(d2[0],d2[1]);g.stroke();}
+  }
+}
+function drawDimLine(g,pa,pb,label){
+  g.strokeStyle='#5b6b84'; g.fillStyle='#26354a'; g.lineWidth=1.2;
+  g.beginPath();g.moveTo(pa[0],pa[1]);g.lineTo(pb[0],pb[1]);g.stroke();
+  for(const p of[pa,pb]){
+    g.beginPath();g.moveTo(p[0]-4,p[1]+4);g.lineTo(p[0]+4,p[1]-4);g.stroke();
+  }
+  const mx=(pa[0]+pb[0])/2,my=(pa[1]+pb[1])/2;
+  g.font='600 12px system-ui'; const tw=g.measureText(label).width;
+  g.fillStyle='rgba(248,250,253,.92)';
+  g.beginPath();g.roundRect(mx-tw/2-5,my-20,tw+10,16,4);g.fill();
+  g.fillStyle='#26354a'; g.textAlign='center'; g.fillText(label,mx,my-8); g.textAlign='left';
+}
+function render3D(g,w,h){
+  CW=w;CH=h;
+  const grad=g.createLinearGradient(0,0,0,h);
+  grad.addColorStop(0,'#f7fafd');grad.addColorStop(1,'#e3eaf4');
+  g.fillStyle=grad; g.fillRect(0,0,w,h);
+  drawGround(g);
+  const faces=[];
+  for(const p of M.prims)primFaces(p,faces);
+  const FOC=h*1.35;
+  for(const f of faces){
+    f.cam=f.v.map(toCam);
+    if(f.cam.some(c=>c[2]<80))continue;
+    f.pts=f.cam.map(c=>[w/2+c[0]*FOC/c[2], h/2-c[1]*FOC/c[2]]);
+    f.d=f.cam.reduce((s,c)=>s+c[2],0)/f.cam.length;
+    f.n=normOf(f.v);
+  }
+  faces.sort((a,b)=>b.d-a.d);
+  for(const f of faces){
+    if(!f.pts)continue;
+    g.beginPath(); g.moveTo(f.pts[0][0],f.pts[0][1]);
+    for(let i=1;i<f.pts.length;i++)g.lineTo(f.pts[i][0],f.pts[i][1]);
+    g.closePath();
+    g.fillStyle=shade(f.col,f.n,f.alpha);
+    g.fill();
+    if(f.alpha==null){g.strokeStyle='rgba(30,40,55,.16)';g.lineWidth=.7;g.stroke();}
+    else{g.strokeStyle='rgba(70,110,140,.35)';g.lineWidth=1;g.stroke();}
+  }
+  if(S.showDims){
+    for(const d of M.dims){
+      const pa=proj(toCam(d.a)), pb=proj(toCam(d.b));
+      if(!pa||!pb)continue;
+      drawDimLine(g,pa,pb,d.label);
+    }
+  }
+}
+
+/* ============================================================
+   2D ПЛАН
+   ============================================================ */
+function planPolyOf(p,tf){
+  const pts=[];
+  if(p.kind==='box'){
+    const cx=p.c[0],cz=p.c[2],w=p.s[0],d=p.s[2],yaw=p.yaw||0;
+    const c=Math.cos(yaw),s=Math.sin(yaw);
+    for(const[x,z]of[[-w/2,-d/2],[w/2,-d/2],[w/2,d/2],[-w/2,d/2]])
+      pts.push(tf(cx+x*c+z*s, cz+x*s+z*c));
+  }else if(p.kind==='prism'){
+    const perp=[-p.dir[1],p.dir[0]];
+    let s0=1e9,s1=-1e9;for(const q of p.prof){s0=Math.min(s0,q[0]);s1=Math.max(s1,q[0]);}
+    const mid=(s0+s1)/2, um=(p.u0+p.u1)/2;
+    const cx=p.org[0]+p.dir[0]*mid+perp[0]*um, cz=p.org[1]+p.dir[1]*mid+perp[1]*um;
+    const len=s1-s0, wid=Math.abs(p.u1-p.u0);
+    const th=Math.atan2(p.dir[1],p.dir[0]), c=Math.cos(th),s=Math.sin(th);
+    for(const[x,z]of[[-len/2,-wid/2],[len/2,-wid/2],[len/2,wid/2],[-len/2,wid/2]])
+      pts.push(tf(cx+x*c+z*s, cz+x*s+z*c));
+  }else if(p.kind==='cyl'){
+    for(let i=0;i<=24;i++){const a=i/24*2*Math.PI;pts.push(tf(p.x+Math.cos(a)*p.r,p.z+Math.sin(a)*p.r));}
+  }else if(p.kind==='mesh'&&p.plan){
+    for(const q of p.plan)pts.push(tf(q[0],q[1]));
+  }
+  return pts;
+}
+function dim2D(g,pa,pb,label,off){
+  const dx=pb[0]-pa[0],dy=pb[1]-pa[1],L=Math.hypot(dx,dy)||1;
+  const nx=-dy/L*off, ny=dx/L*off;
+  const A=[pa[0]+nx,pa[1]+ny],B=[pb[0]+nx,pb[1]+ny];
+  g.strokeStyle='#8a94a6';g.lineWidth=1;
+  g.beginPath();g.moveTo(pa[0],pa[1]);g.lineTo(A[0],A[1]);g.moveTo(pb[0],pb[1]);g.lineTo(B[0],B[1]);g.stroke();
+  g.strokeStyle='#3d4a5f';
+  g.beginPath();g.moveTo(A[0],A[1]);g.lineTo(B[0],B[1]);g.stroke();
+  for(const p of[A,B]){g.beginPath();g.moveTo(p[0]-4,p[1]+4);g.lineTo(p[0]+4,p[1]-4);g.stroke();}
+  const mx=(A[0]+B[0])/2,my=(A[1]+B[1])/2;
+  g.font='600 12px system-ui';g.fillStyle='#26354a';g.textAlign='center';
+  g.fillText(label,mx,my-6);g.textAlign='left';
+}
+function renderPlan(g,w,h){
+  g.fillStyle='#fff';g.fillRect(0,0,w,h);
+  const pl=M.plan;
+  const padL=95,padR=70,padT=70,padB=95;
+  const k=Math.min((w-padL-padR)/Math.max(1,pl.x1-pl.x0),(h-padT-padB)/Math.max(1,pl.z1-pl.z0));
+  const ox=(w-(pl.x1-pl.x0)*k)/2, oz=(h-(pl.z1-pl.z0)*k)/2;
+  const tf=(x,z)=>[ox+(x-pl.x0)*k, oz+(z-pl.z0)*k];
+  const order={slab:0,frame:1,riser:2,tread:3,landing:3,rail:4,glass:4};
+  const pr=[...M.prims].sort((a,b)=>(order[a.role]??5)-(order[b.role]??5));
+  for(const p of pr){
+    const pts=planPolyOf(p,tf); if(pts.length<2)continue;
+    g.beginPath();g.moveTo(pts[0][0],pts[0][1]);
+    for(let i=1;i<pts.length;i++)g.lineTo(pts[i][0],pts[i][1]);
+    g.closePath();
+    if(p.role==='slab'){g.fillStyle='rgba(210,218,230,.4)';g.fill();}
+    else if(p.role==='frame'){g.fillStyle='rgba(120,130,145,.5)';g.fill();g.strokeStyle='rgba(90,100,115,.7)';g.lineWidth=.8;g.stroke();}
+    else if(p.role==='tread'||p.role==='landing'){
+      const c=treadCols().col;
+      g.fillStyle=`rgb(${c[0]},${c[1]},${c[2]})`;g.fill();
+      g.strokeStyle='#4a5568';g.lineWidth=1.1;g.stroke();
+    }
+    else if(p.role==='riser'){g.strokeStyle='rgba(120,100,70,.35)';g.lineWidth=.8;g.stroke();}
+    else if(p.role==='rail'||p.role==='glass'){
+      g.strokeStyle=p.role==='glass'?'rgba(60,110,150,.55)':'#333c4e';
+      g.lineWidth=p.role==='glass'?3:1.6;
+      if(p.role==='rail')g.setLineDash([5,4]);
+      g.stroke();g.setLineDash([]);
+    }
+  }
+  // номера ступеней + линия хода
+  g.font='600 11px system-ui';g.fillStyle='#2c3a52';g.textAlign='center';
+  let stepNo=1; const walk=[];
+  for(const p of M.prims){
+    if(p.role!=='tread')continue;
+    if(p.kind==='box'){
+      const cx=p.c[0],cz=p.c[2],yaw=p.yaw||0;
+      const hl=p.s[0]/2;
+      const px=tf(cx,cz);
+      g.fillText(String(stepNo),px[0],px[1]+4);
+      walk.push(tf(cx+Math.cos(yaw)*hl, cz+Math.sin(yaw)*hl));
+    }else if(p.kind==='mesh'&&p.plan&&p.plan.length>2){
+      let sx=0,sz=0;for(const q of p.plan){sx+=q[0];sz+=q[1];}
+      const cx=sx/p.plan.length, cz=sz/p.plan.length;
+      const px=tf(cx,cz);
+      g.fillText(String(stepNo),px[0],px[1]+4);
+      walk.push(px);
+    }else continue;
+    stepNo++;
+  }
+  if(walk.length>1){
+    g.strokeStyle='#2f6fed';g.lineWidth=1.6;
+    g.beginPath();g.moveTo(walk[0][0],walk[0][1]);
+    for(let i=1;i<walk.length;i++)g.lineTo(walk[i][0],walk[i][1]);
+    g.stroke();
+    const a=walk[walk.length-2]||walk[0],b=walk[walk.length-1];
+    const ang=Math.atan2(b[1]-a[1],b[0]-a[0]);
+    g.fillStyle='#2f6fed';
+    g.beginPath();g.moveTo(b[0],b[1]);
+    g.lineTo(b[0]-13*Math.cos(ang-0.4),b[1]-13*Math.sin(ang-0.4));
+    g.lineTo(b[0]-13*Math.cos(ang+0.4),b[1]-13*Math.sin(ang+0.4));
+    g.closePath();g.fill();
+    g.font='700 12px system-ui';
+    g.fillText('вверх',b[0]+24*Math.cos(ang),b[1]+24*Math.sin(ang)+4);
+  }
+  const ft=M.foot;
+  if(S.showDims&&ft){
+    if(S.type==='spiral'){
+      dim2D(g,tf(-S.spiralD/2,0),tf(S.spiralD/2,0),`⌀ ${fmt(S.spiralD)}`,30);
+      const c=tf(0,S.spiralD/2);
+      g.font='600 12px system-ui';g.fillStyle='#26354a';g.textAlign='center';
+      g.fillText(`поворот ${Math.round(D.spiralRot)}°`,c[0],c[1]+30);g.textAlign='left';
+    }else{
+      dim2D(g,tf(ft.x0,ft.z1),tf(ft.x1,ft.z1),`A = ${fmt(ft.x1-ft.x0)}`,36);
+      dim2D(g,tf(ft.x1,ft.z0),tf(ft.x1,ft.z1),`B = ${fmt(ft.z1-ft.z0)}`,36);
+      if(S.type==='straight')dim2D(g,tf(ft.x0,ft.z0),tf(ft.x0,ft.z1),`W = ${fmt(S.W)}`,-36);
+    }
+  }
+  g.font='700 13px system-ui';g.fillStyle='#1b2534';
+  g.fillText(M.stats?M.stats.type:'',16,26);
+  g.font='400 11px system-ui';g.fillStyle='#8a94a6';
+  g.fillText('План · вид сверху · размеры в мм',16,42);
+  const sc=Math.round((1/k)/0.2646/5)*5;
+  if(sc>0)g.fillText(`масштаб на экране ≈ 1:${sc}`,16,h-14);
+}
+
+/* ============================================================
+   2D ФАСАД (развёртка)
+   ============================================================ */
+function facadeSegs(){
+  const n=D.n,b=D.b;
+  if(S.type==='lshape'){const n1=Math.ceil(n/2);return[{r:n1-1},{land:S.W},{r:n-n1-1}];}
+  if(S.type==='ushape'){const n1=Math.ceil(n/2);return[{r:n1-1},{land:2*S.W+60},{r:n-n1-1}];}
+  return[{r:n-1}];
+}
+function renderSide(g,w,h){
+  g.fillStyle='#fff';g.fillRect(0,0,w,h);
+  const segs=facadeSegs(), b=D.b, hStep=D.h;
+  let totalRun=0;for(const s of segs)totalRun+=(s.r||0)*b+(s.land||0);
+  const padL=90,padR=80,padT=80,padB=100;
+  const k=Math.min((w-padL-padR)/Math.max(1,totalRun),(h-padT-padB)/Math.max(1,S.H));
+  const X=mm=>padL+mm*k, Y=mm=>h-padB-mm*k;
+  g.strokeStyle='#7b879a';g.lineWidth=2;
+  g.beginPath();g.moveTo(X(-60),Y(0));g.lineTo(X(totalRun+180),Y(0));g.stroke();
+  g.strokeStyle='#2c3a52';g.lineWidth=1.6;
+  g.beginPath();
+  let x=0,y=0;
+  g.moveTo(X(x),Y(y));
+  const poly=[[x,y]];
+  for(const s of segs){
+    if(s.r!==undefined){
+      for(let i=0;i<s.r;i++){y+=hStep;x+=b;g.lineTo(X(x-b),Y(y));g.lineTo(X(x),Y(y));poly.push([x-b,y],[x,y]);}
+      y+=hStep;g.lineTo(X(x),Y(y));poly.push([x,y]);
+    }else{
+      x+=s.land;g.lineTo(X(x),Y(y));poly.push([x,y]);
+    }
+  }
+  g.stroke();
+  g.beginPath();
+  g.moveTo(X(poly[0][0]),Y(poly[0][1]));
+  for(const p of poly)g.lineTo(X(p[0]),Y(p[1]));
+  g.lineTo(X(x),Y(0));g.lineTo(X(0),Y(0));g.closePath();
+  g.fillStyle='rgba(226,205,164,.5)';g.fill();
+  g.strokeStyle='#5f6c80';g.setLineDash([7,4]);g.lineWidth=1.4;
+  g.beginPath();g.moveTo(X(0),Y(-250));g.lineTo(X(totalRun),Y(S.H-250));
+  g.stroke();g.setLineDash([]);
+  g.fillStyle='#d7dde8';
+  g.fillRect(X(x-5),Y(S.H+200),Math.min(320*k,240),200*k);
+  if(S.showDims){
+    dim2D(g,[X(-35),Y(0)],[X(-35),Y(S.H)],`H = ${fmt(S.H)}`,-26);
+    dim2D(g,[X(0),Y(-45)],[X(totalRun),Y(-45)],`L = ${fmt1(totalRun)}`,-24);
+    dim2D(g,[X(0),Y(0)],[X(0),Y(hStep)],`h = ${fmt1(hStep)}`,22);
+    dim2D(g,[X(0),Y(hStep+40)],[X(b),Y(hStep+40)],`b = ${fmt1(b)}`,20);
+    g.strokeStyle='#2f6fed';g.lineWidth=1.5;
+    const r=70,a0=Math.atan2(hStep,b);
+    g.beginPath();g.arc(X(0),Y(0),r,-a0,0);g.stroke();
+    g.font='700 13px system-ui';g.fillStyle='#2f6fed';
+    g.fillText(`${D.angle.toFixed(1)}°`,X(0)+r+8,Y(0)-14);
+  }
+  g.font='700 13px system-ui';g.fillStyle='#1b2534';
+  g.fillText('Фасад · развёртка по линии ходьбы',16,26);
+  g.font='400 11px system-ui';g.fillStyle='#8a94a6';
+  g.fillText('размеры в мм',16,42);
+}
+
+/* ============================================================
+   СПЕЦИФИКАЦИЯ ДЕТАЛЕЙ (без цен)
+   ============================================================ */
+function computeParts(){
+  const st=M.stats;
+  const rows=[];
+  const R=(name,qty,unit)=>rows.push({name,qty,unit});
+  R(`Ступень ${matName()}, ${fmt1(D.b)}×${fmt(S.W)}×${S.treadT} мм`,st.treads,'шт');
+  if(S.riser&&st.risers>0)R(`Подступенок ${matName()}, ${fmt1(D.h-S.treadT)}×${fmt(S.W)} мм`,st.risers,'шт');
+  if(st.landArea>0)R('Площадка (щит + опорная рама)',1,'компл.');
+  if(S.type==='spiral'){
+    R('Стойка центральная, труба ⌀120×5',1,'шт');
+    R('Фланец опорный ⌀300, анкеры М12',1,'компл.');
+  }else{
+    R(`${FRAMES[S.frame].name} — заготовки по ${fmt1(st.frameLen)} м.п.`,2,'шт');
+  }
+  if(S.rail!=='none'){
+    R(`Ограждение: ${RAILS[S.rail].name}, H=${S.railH} мм`,Number(st.railLen.toFixed(1)),'м.п.');
+    R('Стойки ограждения',st.posts,'шт');
+    R('Поручень (длина по склону)',Number(st.railLen.toFixed(1)),'м.п.');
+  }
+  R('Крепёж, анкеры, метизы',1,'компл.');
+  R(S.mat==='wood'?`Покрытие: ${FINISHNAME[S.finish]}`:'Грунт + эмаль по металлу',1,'компл.');
+  const mass=Math.round(st.treadArea*S.treadT/1000*(S.mat==='metal'?7850:680) + st.frameLen*2*10.5 + st.posts*4);
+  return {rows,mass};
+}
+
+/* ============================================================
+   ПАНЕЛИ
+   ============================================================ */
+function renderPanels(){
+  $('angVal').textContent=D.angle.toFixed(1)+'°';
+  const a=D.angle;
+  const comfort=a<=38&&a>=20;
+  $('angInfo').textContent=comfort?'комфорт':a<=45?'крутовато':'слишком круто';
+  $('angleBadge').style.color=comfort?'var(--ok)':a<=45?'var(--warn)':'var(--err)';
+  $('nBadge').innerHTML=`Ступеней: <b>${D.n}</b> · h <b>${fmt1(D.h)}</b> мм · b <b>${fmt1(D.b)}</b> мм · L <b>${fmt1(D.run)}</b> мм · 2h+b <b>${fmt1(D.blondel)}</b>`;
+  if(document.activeElement!==$('iN'))$('iN').value=D.n;
+  const st=M.stats;
+  const rows2=[
+    ['Ступеней (подъёмов)',`${D.n} <span class="sub">шт</span>`],
+    ['Подступенок h',`${fmt1(D.h)} <span class="sub">мм</span>`],
+    ['Проступь b',`${fmt1(D.b)} <span class="sub">мм</span>`],
+    ['Длина по полу (проекция)',`${fmt1(D.run)} <span class="sub">мм</span>`],
+    ['Угол наклона',`${D.angle.toFixed(1)}°`],
+    ['Длина марша (тетива)',`${fmt1(D.slopeLen)} <span class="sub">мм</span>`],
+    ['Площадь марша',`${D.marchArea.toFixed(2)} <span class="sub">м²</span>`],
+  ];
+  if(S.type==='lshape'||S.type==='ushape'){
+    rows2.push(['Подъёмов до площадки',`${D.landRisers} <span class="sub">шт</span>`]);
+    rows2.push(['Отметка площадки',`${fmt1(D.landY)} <span class="sub">мм</span>`]);
+    rows2.push(['Габарит по полу',`${fmt1(M.foot.x1-M.foot.x0)} × ${fmt1(M.foot.z1-M.foot.z0)} <span class="sub">мм</span>`]);
+  }
+  if(S.type==='spiral')rows2.push(['Полный угол поворота',`${Math.round(D.spiralRot)}°`]);
+  rows2.push(['Масса конструкции',`≈ ${fmt(parts.mass)} <span class="sub">кг</span>`]);
+  if(D.head!==null)rows2.push(['Просвет под перекрытием',`${fmt1(D.head)} <span class="sub">мм</span>`]);
+  $('paramsTbl').innerHTML=rows2.map(r=>`<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+  const ico={ok:'✓',warn:'⚠',err:'✕'};
+  $('warnBox').innerHTML=D.warns.map(x=>`<div class="warnitem ${x.lv}"><span class="ic">${ico[x.lv]}</span><span>${x.t}</span></div>`).join('');
+  $('partsTbl').innerHTML=parts.rows.map(r=>`<tr><td>${r.name}</td><td>${r.qty} <span class="sub">${r.unit}</span></td></tr>`).join('');
+  $('geomCalc').innerHTML=`Угол <b>${D.angle.toFixed(1)}°</b> · подъёмов <b>${D.n}</b> · h факт <b>${fmt1(D.h)} мм</b> · L по полу <b>${fmt1(D.run)} мм</b> · 2h+b = <b>${fmt1(D.blondel)}</b>`;
+}
+
+/* ============================================================
+   ЦИКЛ
+   ============================================================ */
+let parts=null, needFit=true;
+function fitCamera(){
+  const bb=M.bbox;
+  cam.target=[bb.cx,bb.cy*0.9,bb.cz];
+  cam.dist=clamp(Math.max(1600,bb.size*1.55),1500,26000);
+  cam.panX=0;cam.panY=0;
+}
+function rebuild(refit){
+  derive();
+  buildModel();
+  parts=computeParts();
+  if(refit||needFit){fitCamera();needFit=false;}
+  syncSliders();
+  renderPanels();
+  draw();
+}
+function draw(){
+  fitCanvas();
+  if(S.view==='3d')render3D(ctx,CW,CH);
+  else if(S.view==='plan')renderPlan(ctx,CW,CH);
+  else renderSide(ctx,CW,CH);
+}
+let raf=0;
+function schedule(refit){if(raf)cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>rebuild(refit));}
+
+let drag=null, pinch=null;
+const ptrs=new Map();
+function pinchState(){
+  const p=[...ptrs.values()];
+  return {d:Math.hypot(p[0][0]-p[1][0],p[0][1]-p[1][1])||1, mx:(p[0][0]+p[1][0])/2, my:(p[0][1]+p[1][1])/2};
+}
+cv.addEventListener('pointerdown',e=>{
+  cv.setPointerCapture(e.pointerId);
+  ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+  if(ptrs.size===1)drag={x:e.clientX,y:e.clientY,b:e.button};
+  else{drag=null;pinch=pinchState();}
+});
+cv.addEventListener('pointermove',e=>{
+  if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,[e.clientX,e.clientY]);
+  if(pinch&&ptrs.size>=2){
+    const s=pinchState();
+    cam.dist=clamp(cam.dist*(pinch.d/s.d),1200,26000);
+    cam.panX-=(s.mx-pinch.mx)*cam.dist/900;
+    cam.panY+=(s.my-pinch.my)*cam.dist/900;
+    pinch=s;draw();return;
+  }
+  if(!drag)return;
+  const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+  drag.x=e.clientX;drag.y=e.clientY;
+  if(drag.b===2||e.shiftKey){cam.panX-=dx*cam.dist/900;cam.panY+=dy*cam.dist/900;}
+  else{cam.yaw+=dx*0.0055;cam.pitch=clamp(cam.pitch+dy*0.005,-0.1,1.45);}
+  draw();
+});
+function endPtr(e){
+  ptrs.delete(e.pointerId);
+  if(ptrs.size<2)pinch=null;
+  if(ptrs.size===0)drag=null;
+  else if(ptrs.size===1){const p=[...ptrs.values()][0];drag={x:p[0],y:p[1],b:0};}
+}
+cv.addEventListener('pointerup',endPtr);
+cv.addEventListener('pointercancel',endPtr);
+cv.addEventListener('contextmenu',e=>e.preventDefault());
+cv.addEventListener('wheel',e=>{e.preventDefault();cam.dist=clamp(cam.dist*(1+e.deltaY*0.0011),1200,26000);draw();},{passive:false});
+window.addEventListener('keydown',e=>{
+  if((e.key==='r'||e.key==='R')&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)){cam.yaw=-0.78;cam.pitch=0.46;needFit=true;rebuild(true);}
+});
+window.addEventListener('resize',draw);
+new ResizeObserver(draw).observe($('stage'));
+
+/* ============================================================
+   UI
+   ============================================================ */
+function fillSel(id,obj){const s=$(id);s.innerHTML=Object.entries(obj).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('');}
+fillSel('selWood',WOODS);fillSel('selFrame',FRAMES);fillSel('selRail',RAILS);
+$('swWood').innerHTML=Object.entries(WOODS).map(([k,v])=>`<div class="sw ${k===S.wood?'on':''}" data-w="${k}" title="${v.name}" style="background:rgb(${v.col.join(',')})"></div>`).join('');
+$('selMetal').innerHTML=Object.entries(METALS).map(([k,v])=>`<option value="${k}">${v.name}</option>`).join('');
+$('swWood').addEventListener('click',e=>{const sw=e.target.closest('.sw');if(!sw)return;S.wood=sw.dataset.w;document.querySelectorAll('#swWood .sw').forEach(x=>x.classList.toggle('on',x===sw));$('selWood').value=S.wood;schedule(false);});
+
+function num(id,fn){
+  $(id).addEventListener('input',e=>{
+    const v=parseFloat(e.target.value.replace(',','.'));
+    if(!isFinite(v))return;
+    fn(v);schedule(false);
+  });
+}
+num('iH',v=>{S.H=clamp(v,1500,6000);needFit=true;});
+num('iW',v=>S.W=clamp(v,600,2000));
+num('iB',v=>S.b=clamp(v,200,400));
+num('iT',v=>S.treadT=clamp(v,20,80));
+num('iHT',v=>S.hTarget=clamp(v,130,220));
+num('iN',v=>{S.nManual=clamp(Math.round(v),3,26);if(S.stepMode!=='manual'){S.stepMode='manual';updateModeUI();}});
+num('iL',v=>{S.runTarget=clamp(v,800,12000);});
+num('iNos',v=>{S.nosing=clamp(v,0,45);});
+num('iOpen',v=>S.openingLen=clamp(v,300,12000));
+num('iRH',v=>S.railH=clamp(v,800,1200));
+num('iSD',v=>{S.spiralD=clamp(v,1100,3200);needFit=true;});
+
+/* слайдеры, синхронные с полями */
+function slider(rid,nid,apply){
+  $(rid).addEventListener('input',e=>{
+    const v=parseFloat(e.target.value);
+    $(nid).value=v; apply(v); schedule(false);
+  });
+}
+slider('iH_r','iH',v=>{S.H=v;needFit=true;});
+slider('iW_r','iW',v=>S.W=v);
+slider('iB_r','iB',v=>S.b=v);
+slider('iHT_r','iHT',v=>S.hTarget=v);
+slider('iSD_r','iSD',v=>{S.spiralD=v;needFit=true;});
+function syncSliders(){
+  $('iH_r').value=S.H; $('iW_r').value=S.W; $('iB_r').value=clamp(S.b,220,350); $('iHT_r').value=S.hTarget; $('iSD_r').value=S.spiralD;
+}
+
+$('iOpenOn').addEventListener('change',e=>{S.openingOn=e.target.checked;$('rowOpen').style.display=S.openingOn?'flex':'none';needFit=true;schedule(true);});
+$('iRiser').addEventListener('change',e=>{S.riser=e.target.checked;schedule(false);});
+$('selWood').addEventListener('change',e=>{S.wood=e.target.value;document.querySelectorAll('#swWood .sw').forEach(x=>x.classList.toggle('on',x.dataset.w===S.wood));schedule(false);});
+$('matSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  S.mat=b.dataset.mat;updateMatUI();schedule(false);
+});
+$('selMetal').addEventListener('change',e=>{S.metal=e.target.value;schedule(false);});
+function updateMatUI(){
+  document.querySelectorAll('#matSeg button').forEach(x=>x.classList.toggle('on',x.dataset.mat===S.mat));
+  $('woodBlock').style.display=S.mat==='wood'?'block':'none';
+  $('metalRow').style.display=S.mat==='metal'?'flex':'none';
+  $('selMetal').value=S.metal;
+}
+$('sideBtn').addEventListener('click',()=>{document.body.classList.toggle('sideOpen');document.body.classList.remove('dataOpen');});
+$('dataBtn').addEventListener('click',()=>{document.body.classList.toggle('dataOpen');document.body.classList.remove('sideOpen');});
+$('scrim').addEventListener('click',()=>document.body.classList.remove('sideOpen','dataOpen'));
+$('selFrame').addEventListener('change',e=>{S.frame=e.target.value;schedule(false);});
+$('selFrameCol').addEventListener('change',e=>{S.frameColor=e.target.value;schedule(false);});
+$('selFin').addEventListener('change',e=>{S.finish=e.target.value;schedule(false);});
+$('selRail').addEventListener('change',e=>{S.rail=e.target.value;schedule(false);});
+$('selSide').addEventListener('change',e=>{S.railSide=e.target.value;schedule(false);});
+function updateModeUI(){
+  const m=S.stepMode;
+  $('rowHT').style.display=m==='auto'?'flex':'none';
+  $('rowHT_r').style.display=m==='auto'?'flex':'none';
+  $('rowL').style.display=m==='length'?'flex':'none';
+  const sp=S.type==='spiral';
+  $('rowB').style.display=(sp||m==='length')?'none':'flex';
+  $('rowB_r').style.display=(sp||m==='length')?'none':'flex';
+  document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.m===m));
+}
+$('modeSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.m==='manual'&&S.stepMode!=='manual')S.nManual=D.n;
+  if(b.dataset.m==='length'&&S.stepMode!=='length'){S.runTarget=Math.max(800,Math.round(D.run/10)*10);$('iL').value=S.runTarget;}
+  S.stepMode=b.dataset.m;
+  updateModeUI();schedule(false);
+});
+/* автоподбор оптимальных ступеней по формуле Блонделя */
+$('optBtn').addEventListener('click',()=>{
+  const H=S.H;let best=null;
+  if(S.stepMode==='length'){
+    for(let k=3;k<=26;k++){
+      const hh=H/k,bb=S.runTarget/(k-1);
+      if(hh<140||hh>200||bb<230||bb>360)continue;
+      const sc=Math.abs(2*hh+bb-625);
+      if(!best||sc<best.sc)best={k,sc};
+    }
+    if(best)S.hTarget=Math.round(H/best.k);
+  }else if(S.type==='spiral'){
+    const R=S.spiralD/2,r0=80,rw=r0+(R-r0)*2/3;
+    for(let k=3;k<=26;k++){
+      const hh=H/k,ch=2*rw*Math.sin(Math.PI/k);
+      if(hh<140||hh>200)continue;
+      const sc=Math.abs(2*hh+ch-625);
+      if(!best||sc<best.sc)best={k,sc};
+    }
+    if(best){S.hTarget=Math.round(H/best.k);S.stepMode='auto';}
+  }else{
+    for(let k=3;k<=26;k++){
+      const hh=H/k;
+      if(hh<140||hh>200)continue;
+      const bb=clamp(Math.round(625-2*hh),250,320);
+      const sc=Math.abs(2*hh+bb-625)+(k>18?60:0);
+      if(!best||sc<best.sc)best={k,bb,sc};
+    }
+    if(best){S.hTarget=Math.round(H/best.k);S.b=best.bb;S.stepMode='auto';}
+  }
+  if(best){syncUI();updateModeUI();schedule(false);}
+  else alert('В комфортном диапазоне вариант не найден — измените высоту, длину или тип лестницы.');
+});
+document.querySelectorAll('#typeGrid .tcard').forEach(c=>c.addEventListener('click',()=>{
+  S.type=c.dataset.type;
+  document.querySelectorAll('#typeGrid .tcard').forEach(x=>x.classList.toggle('on',x===c));
+  applyTypeUI();needFit=true;schedule(true);
+}));
+document.querySelectorAll('.tabs button').forEach(b=>b.addEventListener('click',()=>{
+  S.view=b.dataset.view;
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  draw();
+}));
+$('dimsTgl').addEventListener('click',()=>{S.showDims=!S.showDims;$('dimsTgl').classList.toggle('on',S.showDims);draw();});
+$('fitBtn').addEventListener('click',()=>{cam.yaw=-0.78;cam.pitch=0.46;needFit=true;rebuild(true);});
+
+function applyTypeUI(){
+  const sp=S.type==='spiral';
+  $('rowSpiral').style.display=sp?'flex':'none';
+  $('rowSD_r').style.display=sp?'flex':'none';
+  $('rowOpenChk').style.display=S.type==='straight'?'flex':'none';
+  $('rowOpen').style.display=S.type==='straight'&&S.openingOn?'flex':'none';
+  updateModeUI();
+  const hints={
+    straight:'Один марш. Минимум площади, но нужен длинный проём в перекрытии.',
+    lshape:'Два марша под 90° с площадкой. Удобна, когда проём у стены.',
+    ushape:'Два марша в противоположные стороны — минимум длины при развороте на 180°.',
+    spiral:'Минимальная площадь. Линия ходьбы — на ⅔ радиуса от стойки.',
+  };
+  $('typeHint').textContent=hints[S.type];
+}
+
+const PRESETS={
+  floor2800:{type:'straight',H:2800,W:950,b:280,stepMode:'auto',hTarget:165,wood:'oak',frame:'closed',rail:'balusters',railSide:'right',openingOn:true,openingLen:3700},
+  basement:{type:'straight',H:2100,W:900,b:260,stepMode:'auto',hTarget:175,wood:'pine',frame:'closed',rail:'wood',railSide:'right',openingOn:false},
+  l3000:{type:'lshape',H:3000,W:950,b:280,stepMode:'auto',hTarget:165,wood:'ash',frame:'stringer',rail:'inox',railSide:'right'},
+  u2900:{type:'ushape',H:2900,W:900,b:270,stepMode:'auto',hTarget:165,wood:'oak',frame:'closed',rail:'glass',railSide:'both'},
+  spiral:{type:'spiral',H:2800,spiralD:1700,b:260,stepMode:'auto',hTarget:170,wood:'larch',frame:'closed',rail:'balusters'},
+  attic:{type:'straight',H:2400,W:700,b:220,stepMode:'auto',hTarget:200,wood:'pine',frame:'stringer',rail:'none',openingOn:false},
+};
+$('presetSel').addEventListener('change',e=>{
+  const p=PRESETS[e.target.value];if(!p)return;
+  Object.assign(S,p);
+  syncUI();applyTypeUI();needFit=true;schedule(true);
+  e.target.value='';
+});
+
+function syncUI(){
+  $('iH').value=S.H;$('iW').value=S.W;$('iB').value=S.b;$('iT').value=S.treadT;
+  $('iHT').value=S.hTarget;$('iN').value=D.n||S.nManual;$('iOpen').value=S.openingLen;
+  $('iL').value=S.runTarget;$('iNos').value=S.nosing;
+  $('iOpenOn').checked=S.openingOn;$('iRiser').checked=S.riser;$('iRH').value=S.railH;$('iSD').value=S.spiralD;
+  $('rowOpen').style.display=S.type==='straight'&&S.openingOn?'flex':'none';
+  updateModeUI();
+  document.querySelectorAll('#typeGrid .tcard').forEach(x=>x.classList.toggle('on',x.dataset.type===S.type));
+  $('selWood').value=S.wood;$('selFrame').value=S.frame;$('selRail').value=S.rail;$('selFin').value=S.finish;
+  $('selFrameCol').value=S.frameColor;$('selSide').value=S.railSide;
+  document.querySelectorAll('#swWood .sw').forEach(x=>x.classList.toggle('on',x.dataset.w===S.wood));
+  updateMatUI();
+  syncSliders();
+}
+
+/* ============================================================
+   ЭКСПОРТ / ДИАЛОГИ
+   ============================================================ */
+/* ============================================================
+   ПЕЧАТНАЯ СПЕЦИФИКАЦИЯ: виды со всех сторон + все данные
+   ============================================================ */
+function offViews(){
+  const shots=[];
+  const saved={yaw:cam.yaw,pitch:cam.pitch,panX:cam.panX,panY:cam.panY,dist:cam.dist};
+  cam.panX=0;cam.panY=0;
+  const iso=[['Перспектива · фронт',-0.78,0.46],['Перспектива · тыл',-0.78+Math.PI,0.46],['Перспектива · слева',-Math.PI/2,0.38],['Перспектива · справа',Math.PI/2,0.38]];
+  for(const[t,yaw,pitch]of iso){
+    cam.yaw=yaw;cam.pitch=pitch;
+    const oc=document.createElement('canvas');oc.width=880;oc.height=620;
+    render3D(oc.getContext('2d'),880,620);
+    shots.push([t,oc.toDataURL('image/png')]);
+  }
+  cam.yaw=saved.yaw;cam.pitch=saved.pitch;
+  const o2=document.createElement('canvas');o2.width=880;o2.height=620;
+  renderPlan(o2.getContext('2d'),880,620);
+  shots.push(['План · вид сверху',o2.toDataURL('image/png')]);
+  const o3=document.createElement('canvas');o3.width=880;o3.height=620;
+  renderSide(o3.getContext('2d'),880,620);
+  shots.push(['Фасад · сбоку (развёртка)',o3.toDataURL('image/png')]);
+  Object.assign(cam,saved);
+  draw();
+  return shots;
+}
+function paramsTableHTML(){
+  const rows=[
+    ['Тип лестницы',M.stats.type],
+    ['Высота подъёма H',fmt1(S.H)+' мм'],
+    ['Ступеней (подъёмов)',D.n+' шт'],
+    ['Подступенок h (точный)',fmt1(D.h)+' мм'],
+    ['Проступь b (точная)',fmt1(D.b)+' мм'],
+    ['Свес ступени',S.nosing+' мм'],
+    ['Длина по полу L',fmt1(D.run)+' мм'],
+    ['Длина тетивы/косоура',fmt1(D.slopeLen)+' мм'],
+    ['Угол наклона',D.angle.toFixed(2)+'°'],
+    ['Формула 2h+b',fmt1(D.blondel)+' мм'],
+    ['Ширина марша W',S.W+' мм'],
+    ['Толщина ступени',S.treadT+' мм'],
+    ['Габарит по полу',`${fmt1(M.foot.x1-M.foot.x0)} × ${fmt1(M.foot.z1-M.foot.z0)} мм`],
+  ];
+  if(D.head!==null)rows.push(['Просвет под перекрытием',fmt1(D.head)+' мм']);
+  if(S.type==='spiral')rows.push(['Полный поворот',Math.round(D.spiralRot)+'°']);
+  rows.push(['Материал ступеней',matName()+', '+S.treadT+' мм']);
+  rows.push(['Каркас',FRAMES[S.frame].name]);
+  rows.push(['Цвет каркаса',{graphite:'графит',black:'чёрный мат',white:'белый',met:'металлик'}[S.frameColor]]);
+  rows.push(['Покрытие',S.mat==='wood'?FINISHNAME[S.finish]:'грунт-эмаль по металлу']);
+  rows.push(['Ограждение',RAILS[S.rail].name+`, H=${S.railH} мм`]);
+  return `<table>${rows.map(r=>`<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join('')}</table>`;
+}
+function stepsTableHTML(){
+  return `<table><tr><th>№ ступени</th><th>Отметка верха, мм</th><th>Шаг h, мм</th><th>Глубина b, мм</th></tr>${
+    D.steps.map(s=>`<tr><td>${s.i}${D.landRisers&&s.i===D.landRisers?' (площадка)':''}</td><td style="text-align:right">+${fmt1(s.y)}</td><td style="text-align:right">${fmt1(D.h)}</td><td style="text-align:right">${fmt1(D.b)}</td></tr>`).join('')
+  }<tr><th>Верхний этаж</th><td style="text-align:right">+${fmt1(S.H)}</td><td></td><td></td></tr></table>`;
+}
+function partsTableHTML(){
+  return `<table><tr><th>Позиция</th><th>Кол-во</th></tr>${parts.rows.map(r=>`<tr><td>${r.name}</td><td style="text-align:right">${r.qty} ${r.unit}</td></tr>`).join('')}
+  <tr class="grand"><td>Масса конструкции ≈</td><td style="text-align:right">${fmt(parts.mass)} кг</td></tr></table>`;
+}
+$('printBtn').addEventListener('click',()=>{
+  const shots=offViews();
+  const imgs=shots.map(([t,d])=>`<figure><img src="${d}"><figcaption>${t}</figcaption></figure>`).join('');
+  $('sheet').innerHTML=`
+    <h1>ЛестПро · спецификация лестницы</h1>
+    <div class="subline">${new Date().toLocaleDateString('ru-RU')} · ${M.stats.type} · все размеры в мм</div>
+    <h2>1. Виды со всех сторон</h2>
+    <div class="pgrid">${imgs}</div>
+    <h2>2. Основные параметры</h2>
+    ${paramsTableHTML()}
+    <h2>3. Ведомость ступеней (точные отметки)</h2>
+    ${stepsTableHTML()}
+    <h2>4. Спецификация деталей и материалов</h2>
+    ${partsTableHTML()}
+    <h2>5. Проверка норм</h2>
+    <ul class="norms">${D.warns.map(x=>`<li>${x.lv==='ok'?'✓':x.lv==='warn'?'⚠':'✕'} ${x.t}</li>`).join('')}</ul>
+    <h2>6. Примечания к изготовлению</h2>
+    <ol>
+      <li>Разметку ступеней вести по ведомости (п.3) с точностью 0,1 мм; контроль первых трёх и последних двух ступеней обязательный.</li>
+      <li>Заготовка тетивы/косоура — ${fmt1(D.slopeLen)} мм прямого участка, запил под угол ${D.angle.toFixed(2)}°.</li>
+      ${S.type==='lshape'||S.type==='ushape'?`<li>Площадка на отметке +${fmt1(D.landY)} мм; опорные стойки с подпятниками — по месту.</li>`:''}
+      <li>Ограждение монтировать после установки ступеней; крайние стойки крепить анкерами М10.</li>
+      <li>Сварные швы зачистить; каркас загрунтовать и окрасить в цвет «${{graphite:'графит',black:'чёрный мат',white:'белый',met:'металлик'}[S.frameColor]}».</li>
+      <li>Допуски сборки: шаг ступеней ±1 мм, диагонали марша ±3 мм, просвет под перекрытием ≥ 2000 мм.</li>
+    </ol>
+    <div class="foot">ЛестПро v1.3 · конфигурация сохраняется кнопкой «💾 Сохранить» (JSON)</div>`;
+  setTimeout(()=>window.print(),200);
+});
+function downloadFile(name,text){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([text],{type:'application/octet-stream'}));
+  a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+}
+$('saveBtn').addEventListener('click',()=>downloadFile('lestpro-config.json',JSON.stringify(S,null,2)));
+$('loadBtn').addEventListener('click',()=>$('loadFile').click());
+$('loadFile').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  f.text().then(t=>{try{Object.assign(S,JSON.parse(t));syncUI();applyTypeUI();needFit=true;schedule(true);}catch(err){alert('Не удалось прочитать файл конфигурации');}});
+});
+$('pngBtn').addEventListener('click',()=>{
+  const oc=document.createElement('canvas');oc.width=1800;oc.height=1300;
+  const og=oc.getContext('2d');
+  if(S.view==='3d')render3D(og,1800,1300);else if(S.view==='plan')renderPlan(og,1800,1300);else renderSide(og,1800,1300);
+  const a=document.createElement('a');a.download=`lestpro-${S.view}.png`;a.href=oc.toDataURL('image/png');a.click();
+});
+setInterval(()=>{try{localStorage.setItem('lp_state',JSON.stringify(S));}catch(e){}},1500);
+try{const s=localStorage.getItem('lp_state');if(s)Object.assign(S,JSON.parse(s));}catch(e){}
+
+applyTypeUI();syncUI();rebuild(true);
+</script>
+</body>
+</html>
