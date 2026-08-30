@@ -53,6 +53,21 @@ export default async function ProductPage({ params }: { params: { id: string } }
     _avg: { rating: true }, _count: { _all: true },
   });
 
+  // Похожие: та же категория, цена ±40%, без самого товара (по фото/витрине)
+  const similar = product.categoryId
+    ? await prisma.product.findMany({
+        where: {
+          categoryId: product.categoryId,
+          id: { not: product.id },
+          status: "AVAILABLE",
+          price: { gte: Math.round(product.price * 0.6), lte: Math.round(product.price * 1.4) },
+        },
+        include: { images: { take: 1, orderBy: { sortOrder: "asc" } } },
+        orderBy: { viewCount: "desc" },
+        take: 6,
+      })
+    : [];
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <nav className="text-xs text-ink-400">
@@ -94,6 +109,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
             <span className="rounded-full bg-ink-100 px-2.5 py-0.5 text-xs font-medium text-ink-600">
               {product.condition === "NEW" ? t.common.new : t.common.used}
             </span>
+            <span className="rounded-full bg-ink-100 px-2.5 py-0.5 text-xs font-medium text-ink-600">📦 {product.quantity} шт.</span>
             {dist != null && <span className="text-xs text-ink-500">📍 {t.common.distance}: {dist.toFixed(1)} км</span>}
           </div>
 
@@ -139,6 +155,30 @@ export default async function ProductPage({ params }: { params: { id: string } }
           <ReportButton targetType="PRODUCT" targetId={product.id} />
         </div>
       </div>
+
+      {similar.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-lg font-extrabold">
+            🔍 {t.common.findSimilar.replace(" по фото", "")} <span className="text-sm font-medium text-ink-400">— та же категория, похожая цена</span>
+          </h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {similar.map((s) => (
+              <a key={s.id} href={`/product/${s.id}`} className="card overflow-hidden transition hover:-translate-y-0.5 hover:shadow-lg">
+                <div className="flex h-24 items-center justify-center bg-ink-100 dark:bg-ink-700">
+                  {s.images[0] ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={s.images[0].url} alt={s.title} className="h-full w-full object-cover" />
+                  ) : <span className="text-3xl">📦</span>}
+                </div>
+                <div className="p-2">
+                  <p className="line-clamp-2 min-h-9 text-xs font-semibold">{s.title}</p>
+                  <p className="mt-0.5 text-sm font-extrabold text-brand-700">{formatPrice(s.price)}</p>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       <ReviewsSection targetType="PRODUCT" targetId={product.id} isLoggedIn={!!user} />
     </div>

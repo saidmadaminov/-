@@ -59,6 +59,12 @@ export async function getCurrentUser() {
     include: { business: true, specialist: true, city: true },
   });
   if (!user || user.isBlocked) return null;
+  // Пульс активности для индикатора «Активно сейчас» (не чаще раза в минуту)
+  const now = Date.now();
+  const last = user.lastSeenAt ? new Date(user.lastSeenAt).getTime() : 0;
+  if (now - last > 60_000) {
+    await prisma.user.update({ where: { id: user.id }, data: { lastSeenAt: new Date() } }).catch(() => null);
+  }
   return user;
 }
 

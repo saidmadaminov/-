@@ -39,6 +39,12 @@ export async function POST(req: NextRequest) {
       cityId: user.cityId,
     },
   });
+  // Бесплатный месяц для бизнес-аккаунта, потом платная подписка
+  await prisma.subscription.upsert({
+    where: { userId: user.id },
+    update: { plan: "TRIAL", trialEndsAt: new Date(Date.now() + 30 * 24 * 3600 * 1000), status: "ACTIVE" },
+    create: { userId: user.id, plan: "TRIAL", trialEndsAt: new Date(Date.now() + 30 * 24 * 3600 * 1000), status: "ACTIVE" },
+  });
   if (user.role === "CUSTOMER") {
     await prisma.user.update({ where: { id: user.id }, data: { role: "BUSINESS" } });
   }

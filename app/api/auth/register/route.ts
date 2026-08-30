@@ -52,6 +52,17 @@ export async function POST(req: NextRequest) {
             },
           }
         : {}),
+      ...(data.role === "SPECIALIST" || data.role === "BUSINESS"
+        ? {
+            subscription: {
+              create: {
+                plan: "TRIAL",
+                trialEndsAt: new Date(Date.now() + 30 * 24 * 3600 * 1000),
+                status: "ACTIVE",
+              },
+            },
+          }
+        : {}),
     },
   });
 

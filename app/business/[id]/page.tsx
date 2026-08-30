@@ -8,6 +8,9 @@ import { getDictionary, LOCALE_COOKIE } from "@/lib/i18n";
 import { formatPrice, formatPriceRange } from "@/lib/geo";
 import { isOpenNow, DAY_NAMES_RU } from "@/lib/utils";
 import ContactButtons from "@/components/ContactButtons";
+import Stories from "@/components/Stories";
+import WatchButton from "@/components/WatchButton";
+import OwnerContent from "@/components/OwnerContent";
 import ReviewsSection from "@/components/ReviewsSection";
 import ReportButton from "@/components/ReportButton";
 import StarRating from "@/components/StarRating";
@@ -40,7 +43,7 @@ export default async function BusinessPage({ params }: { params: { id: string } 
 
   await prisma.business.update({ where: { id: business.id }, data: { viewCount: { increment: 1 } } });
 
-  const [products, services, videos] = await Promise.all([
+  const [products, services, videos, posts, stories, watchInfo] = await Promise.all([
     prisma.product.findMany({
       where: { businessId: business.id, status: { not: "HIDDEN" } },
       include: { images: { take: 1, orderBy: { sortOrder: "asc" } }, category: true },
@@ -48,7 +51,22 @@ export default async function BusinessPage({ params }: { params: { id: string } 
     }),
     prisma.service.findMany({ where: { businessId: business.id }, include: { category: true }, take: 10 }),
     prisma.video.findMany({ where: { businessId: business.id, status: "APPROVED" }, take: 6 }),
+    prisma.post.findMany({
+      where: { businessId: business.id },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      include: { images: { orderBy: { sortOrder: "asc" } } },
+    }),
+    prisma.story.findMany({
+      where: { businessId: business.id, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.watch.count({ where: { ownerType: "BUSINESS", ownerId: business.id } }),
   ]);
+  const myWatch = user
+    ? !!(await prisma.watch.findUnique({ where: { userId_ownerType_ownerId: { userId: user.id, ownerType: "BUSINESS", ownerId: business.id } } }))
+    : false;
+  const isOwner = user?.id === business.ownerId;
 
   const open = isOpenNow(business.hours);
 
@@ -74,9 +92,15 @@ export default async function BusinessPage({ params }: { params: { id: string } 
               {business.category && <span>{business.category.icon} {business.category.name}</span>}
               <StarRating value={business.ratingAvg} count={business.reviewCount} />
               <span>👁 {business.viewCount}</span>
+              {business.ratingAvg < 3.5 && business.reviewCount >= 3 && (
+                <span className="badge-ad" title={t.common.lowRating}>⚠️ {t.common.lowRating}</span>
+              )}
               <span className={open ? "font-semibold text-emerald-600" : "text-ink-400"}>
                 ● {open ? t.common.openNow : t.common.closedNow}
               </span>
+            </div>
+            <div className="mt-2">
+              <WatchButton ownerType="BUSINESS" ownerId={business.id} initialCount={watchInfo} initialWatching={myWatch} isLoggedIn={!!user} />
             </div>
           </div>
           <ContactButtons
@@ -91,6 +115,7 @@ export default async function BusinessPage({ params }: { params: { id: string } 
 
       <div className="grid gap-6 md:grid-cols-[1fr_260px]">
         <div className="space-y-8">
+          <Stories ownerType="BUSINESS" ownerId={business.id} canAdd={isOwner} initial={stories} />
           {business.description && (
             <section>
               <h2 className="mb-2 text-lg font-extrabold">О компании</h2>
@@ -136,6 +161,11 @@ export default async function BusinessPage({ params }: { params: { id: string } 
               </div>
             </section>
           )}
+
+          <OwnerContent
+            posts={posts.map((p) => ({ ...p, createdAt: p.createdAt.toISOString() }))}
+            canAdd={isOwner}
+          />
 
           <ReviewsSection targetType="BUSINESS" targetId={business.id} isLoggedIn={!!user} />
         </div>

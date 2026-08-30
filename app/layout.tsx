@@ -36,10 +36,19 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const jar = cookies();
   const locale = jar.get(LOCALE_COOKIE)?.value;
+  const theme = jar.get("naydi_theme")?.value;
   const user = await getCurrentUser();
 
   return (
-    <html lang={locale === "en" ? "en" : "ru"}>
+    <html lang={locale === "en" ? "en" : "ru"} className={theme === "dark" ? "dark" : undefined}>
+      <head>
+        {/* Без мигания: тема применяется до гидратации */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(document.cookie.indexOf('naydi_theme=dark')>-1)document.documentElement.classList.add('dark')}catch(e){}`,
+          }}
+        />
+      </head>
       <body>
         <I18nProvider locale={locale}>
           <Header user={user ? { name: user.name, role: user.role } : null} />
@@ -47,7 +56,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             {children}
           </main>
           <footer className="border-t border-ink-100 bg-white py-8 pb-24 text-center text-xs text-ink-400 md:pb-8">
-            <p>Naydi — MVP платформа для Бишкека. Демо-данные помечены как «Demo data».</p>
+            <p>
+              <a href="/rules" className="mx-1 hover:underline">Правила платформы</a>
+              · Naydi — MVP платформа для Бишкека. Демо-данные помечены как «Demo data».
+            </p>
           </footer>
           <BottomNav role={user?.role ?? null} />
         </I18nProvider>

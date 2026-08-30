@@ -50,7 +50,17 @@ export default function OfferCard({
         <div className="absolute left-2 top-2 flex flex-col gap-1">
           {offer.isPromoted && <span className="badge-ad">{t.common.ad}</span>}
           {offer.isDemo && <span className="badge-demo">{t.common.demo}</span>}
+          {offer.lowRating && <span className="badge-ad" title={t.common.lowRating}>⚠</span>}
         </div>
+        {offer.activeNow && (
+          <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-semibold text-white backdrop-blur" title={t.common.activeNow}>
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            </span>
+            {t.common.activeNow}
+          </span>
+        )}
         <div className="absolute right-2 top-2">
           <FavoriteButton targetType={offer.type} targetId={offer.id} initial={isFavorite} isLoggedIn={isLoggedIn} />
         </div>

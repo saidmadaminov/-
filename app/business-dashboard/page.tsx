@@ -3,10 +3,11 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { formatPrice, formatPriceRange } from "@/lib/geo";
-import { PRODUCT_STATUS_LABELS_RU, type ProductStatus } from "@/types";
+import { formatPriceRange } from "@/lib/geo";
 import DashboardCreateForms from "@/components/DashboardCreateForms";
 import VerificationForm from "@/components/VerificationForm";
+import TrialBanner from "@/components/TrialBanner";
+import ProductEditor from "@/components/ProductEditor";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,10 @@ export default async function BusinessDashboardPage() {
 
   const specialist = await prisma.specialist.findUnique({ where: { userId: user.id } });
   let business = await prisma.business.findUnique({ where: { ownerId: user.id }, include: { category: true } });
+  const subscription = await prisma.subscription.findUnique({ where: { userId: user.id } });
+  const trialDaysLeft = subscription?.trialEndsAt
+    ? Math.max(0, Math.ceil((new Date(subscription.trialEndsAt).getTime() - Date.now()) / (24 * 3600 * 1000)))
+    : null;
 
   // Специалист без бизнеса всё равно получает кабинет (услуги/верификация)
   if (!business && !specialist) {
@@ -28,7 +33,7 @@ export default async function BusinessDashboardPage() {
 
   const [products, services, orders, messagesCount, convCount] = await Promise.all([
     business
-      ? prisma.product.findMany({ where: { businessId: business.id }, orderBy: { createdAt: "desc" }, include: { category: true } })
+      ? prisma.product.findMany({ where: { businessId: business.id }, orderBy: { createdAt: "desc" }, include: { images: { orderBy: { sortOrder: "asc" } } } })
       : Promise.resolve([]),
     business
       ? prisma.service.findMany({ where: { businessId: business.id }, orderBy: { createdAt: "desc" } })
@@ -80,6 +85,11 @@ export default async function BusinessDashboardPage() {
         ))}
       </div>
 
+      {/* Подписка */}
+      {(business || specialist) && (
+        <TrialBanner plan={subscription?.plan ?? "NONE"} trialDaysLeft={trialDaysLeft} />
+      )}
+
       {/* Статус верификации */}
       {(business || specialist) && (
         <VerificationForm
@@ -94,19 +104,14 @@ export default async function BusinessDashboardPage() {
           <h2 className="text-lg font-extrabold">Товары ({products.length})</h2>
           <div className="space-y-2">
             {products.map((p) => (
-              <div key={p.id} className="card flex items-center justify-between gap-3 p-3.5">
-                <div className="min-w-0">
-                  <Link href={`/product/${p.id}`} className="truncate text-sm font-bold hover:text-brand-700">{p.title}</Link>
-                  <p className="text-xs text-ink-400">
-                    {formatPrice(p.price)} · {p.category?.name ?? "—"} · 👁 {p.viewCount}
-                  </p>
-                </div>
-                <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                  p.status === "AVAILABLE" ? "bg-emerald-50 text-emerald-700" : p.status === "HIDDEN" ? "bg-ink-100 text-ink-500" : "bg-red-50 text-red-600"
-                }`}>
-                  {PRODUCT_STATUS_LABELS_RU[p.status as ProductStatus] ?? p.status}
-                </span>
-              </div>
+              <ProductEditor
+                key={p.id}
+                product={{
+                  id: p.id, title: p.title, price: p.price, description: p.description,
+                  quantity: p.quantity, status: p.status, condition: p.condition,
+                  images: p.images.map((i) => ({ id: i.id, url: i.url })),
+                }}
+              />
             ))}
             {products.length === 0 && <p className="card p-4 text-sm text-ink-400">Товаров пока нет</p>}
           </div>

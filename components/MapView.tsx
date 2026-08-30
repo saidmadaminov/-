@@ -10,9 +10,10 @@ import { formatPrice, formatPriceRange } from "@/lib/geo";
 import type { MapPoint } from "@/types";
 
 function pinIcon(point: MapPoint) {
+  const low = point.reviewCount >= 3 && point.rating > 0 && point.rating < 3.5;
   return L.divIcon({
     className: "",
-    html: `<div class="naydi-pin ${point.verified ? "verified" : ""}"><span>${point.icon ?? "📍"}</span></div>`,
+    html: `<div class="naydi-pin ${point.verified ? "verified" : ""} ${low ? "low" : ""}"><span>${low ? "⚠" : point.icon ?? "📍"}</span></div>`,
     iconSize: [34, 34],
     iconAnchor: [17, 32],
     popupAnchor: [0, -30],

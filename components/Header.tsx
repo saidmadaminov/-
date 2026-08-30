@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useI18n } from "@/lib/i18n/provider";
 import LanguageSwitcher from "./LanguageSwitcher";
+import ThemeToggle from "./ThemeToggle";
 import type { Role } from "@/types";
 
 export default function Header({ user }: { user: { name: string; role: Role } | null }) {
@@ -42,6 +43,7 @@ export default function Header({ user }: { user: { name: string; role: Role } | 
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          <ThemeToggle />
           <LanguageSwitcher />
           {user ? (
             <div className="relative">
