@@ -1,0 +1,559 @@
+// Naydi — схема БД (MVP, Бишкек).
+// Dev: SQLite (ноль настройки локально). Production: переключить provider на "postgresql"
+// и указать postgres DATABASE_URL — схема совместима (enum-ов нет намеренно, статусы — строки).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------- География -----------------------------
+
+model City {
+  id          Int      @id @default(autoincrement())
+  name        String
+  nameKy      String?
+  country     String   @default("Кыргызстан")
+  region      String?
+  lat         Float
+  lng         Float
+  users       User[]
+  businesses  Business[]
+  specialists Specialist[]
+  products    Product[]
+  services    Service[]
+}
+
+// ----------------------------- Пользователи -----------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  phone         String?   @unique
+  email         String?   @unique
+  passwordHash  String
+  name          String
+  role          String    @default("CUSTOMER") // CUSTOMER | BUSINESS | SPECIALIST | ADMIN
+  avatarUrl     String?
+  locale        String    @default("ru")
+  cityId        Int?
+  city          City?     @relation(fields: [cityId], references: [id])
+  lat           Float?
+  lng           Float?
+  address       String?
+  isBlocked     Boolean   @default(false)
+  lastSeenAt    DateTime? // для индикатора «Активно сейчас»
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile              Profile?
+  business             Business?
+  specialist           Specialist?
+  reviewsGiven         Review[]               @relation("ReviewAuthor")
+  favorites            Favorite[]
+  conversationsCustomer Conversation[]        @relation("CustomerSide")
+  conversationsProvider Conversation[]        @relation("ProviderSide")
+  messages             Message[]
+  orders               Order[]                @relation("CustomerOrders")
+  productsSold         Product[]              @relation("ProductSeller")
+  complaints           Complaint[]
+  notifications        Notification[]
+  searchHistory        SearchHistory[]
+  locations            Location[]
+  verificationsReviewed Verification[]        @relation("VerificationReviewer")
+  subscription         Subscription?
+  payments             Payment[]
+  watches              Watch[]
+}
+
+model Profile {
+  id      String @id @default(cuid())
+  userId  String @unique
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio     String?
+}
+
+// ----------------------------- Бизнес и специалисты -----------------------------
+
+model Business {
+  id                 String   @id @default(cuid())
+  slug               String   @unique
+  ownerId            String   @unique
+  owner              User     @relation(fields: [ownerId], references: [id])
+  name               String
+  description        String?
+  logoUrl            String?
+  categoryId         Int?
+  category           Category? @relation(fields: [categoryId], references: [id])
+  cityId             Int?
+  city               City?    @relation(fields: [cityId], references: [id])
+  address            String?
+  lat                Float?
+  lng                Float?
+  phone              String?
+  whatsapp           String?
+  website            String?
+  isVerified         Boolean  @default(false)
+  verificationStatus String   @default("NONE") // NONE | PENDING | VERIFIED | REJECTED | SUSPENDED
+  ratingAvg          Float    @default(0)
+  reviewCount        Int      @default(0)
+  viewCount          Int      @default(0)
+  isDemo             Boolean  @default(false)
+  createdAt          DateTime @default(now())
+
+  hours        BusinessHours[]
+  products     Product[]
+  services     Service[]
+  images       BusinessImage[]
+  videos       Video[]
+  promotions   Promotion[]
+  conversations Conversation[]
+  orders       Order[]
+  verification Verification[]
+  posts        Post[]
+  stories      Story[]
+}
+
+model Specialist {
+  id                 String   @id @default(cuid())
+  slug               String   @unique
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id])
+  profession         String
+  description        String?
+  photoUrl           String?
+  experienceYears    Int      @default(0)
+  priceFrom          Int?
+  priceTo            Int?
+  district           String?
+  isOnSite           Boolean  @default(true) // выезд к клиенту
+  availability       String?
+  categoryId         Int?
+  category           Category? @relation(fields: [categoryId], references: [id])
+  cityId             Int?
+  city               City?    @relation(fields: [cityId], references: [id])
+  lat                Float?
+  lng                Float?
+  phone              String?
+  isVerified         Boolean  @default(false)
+  verificationStatus String   @default("NONE")
+  ratingAvg          Float    @default(0)
+  reviewCount        Int      @default(0)
+  viewCount          Int      @default(0)
+  isDemo             Boolean  @default(false)
+  createdAt          DateTime @default(now())
+
+  services     Service[]
+  portfolio    SpecialistImage[]
+  videos       Video[]
+  promotions   Promotion[]
+  conversations Conversation[]
+  orders       Order[]
+  verification Verification[]
+  posts        Post[]
+  stories      Story[]
+}
+
+model BusinessImage {
+  id         String  @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  url        String
+  caption    String?
+}
+
+model SpecialistImage {
+  id          String    @id @default(cuid())
+  specialistId String
+  specialist  Specialist @relation(fields: [specialistId], references: [id], onDelete: Cascade)
+  url         String
+  caption     String?
+}
+
+model BusinessHours {
+  id         String  @id @default(cuid())
+  businessId String
+  business   Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  day        Int // 0=Пн ... 6=Вс
+  open       String  @default("09:00")
+  close      String  @default("18:00")
+  isClosed   Boolean @default(false)
+}
+
+// ----------------------------- Верификация -----------------------------
+
+model Verification {
+  id           String    @id @default(cuid())
+  targetType   String // BUSINESS | SPECIALIST
+  businessId   String?
+  business     Business? @relation(fields: [businessId], references: [id])
+  specialistId String?
+  specialist   Specialist? @relation(fields: [specialistId], references: [id])
+  status       String    @default("PENDING") // PENDING | VERIFIED | REJECTED | SUSPENDED
+  note         String? // комментарий заявителя
+  submittedAt  DateTime  @default(now())
+  reviewedAt   DateTime?
+  reviewerId   String?
+  reviewer     User?     @relation("VerificationReviewer", fields: [reviewerId], references: [id])
+  documents    VerificationDocument[]
+}
+
+model VerificationDocument {
+  id             String       @id @default(cuid())
+  verificationId String
+  verification   Verification @relation(fields: [verificationId], references: [id], onDelete: Cascade)
+  docType        String // REGISTRATION | IDENTITY | CERTIFICATE | ADDRESS | OTHER
+  fileUrl        String
+  createdAt      DateTime     @default(now())
+}
+
+// ----------------------------- Каталог -----------------------------
+
+model Category {
+  id        Int         @id @default(autoincrement())
+  slug      String      @unique
+  name      String
+  nameKy    String?
+  icon      String      @default("📦")
+  parentId  Int?
+  parent    Category?   @relation("CategoryTree", fields: [parentId], references: [id])
+  children  Category[]  @relation("CategoryTree")
+  sortOrder Int         @default(0)
+  businesses Business[]
+  products  Product[]
+  services  Service[]
+  specialists Specialist[]
+}
+
+model Product {
+  id          String    @id @default(cuid())
+  businessId  String?
+  business    Business? @relation(fields: [businessId], references: [id])
+  sellerId    String?
+  seller      User?     @relation("ProductSeller", fields: [sellerId], references: [id])
+  categoryId  Int?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  cityId      Int?
+  city        City?     @relation(fields: [cityId], references: [id])
+  title       String
+  description String?
+  price       Int
+  condition   String    @default("NEW") // NEW | USED
+  status      String    @default("AVAILABLE") // AVAILABLE | OUT_OF_STOCK | HIDDEN
+  quantity    Int       @default(1)
+  address     String?
+  lat         Float?
+  lng         Float?
+  viewCount   Int       @default(0)
+  isPromoted  Boolean   @default(false)
+  isDemo      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  images     ProductImage[]
+  videos     Video[]
+  orderItems OrderItem[]
+  orders     Order[]
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  sortOrder Int     @default(0)
+}
+
+model Service {
+  id           String    @id @default(cuid())
+  businessId   String?
+  business     Business? @relation(fields: [businessId], references: [id])
+  specialistId String?
+  specialist   Specialist? @relation(fields: [specialistId], references: [id])
+  categoryId   Int?
+  category     Category? @relation(fields: [categoryId], references: [id])
+  cityId       Int?
+  city         City?     @relation(fields: [cityId], references: [id])
+  title        String
+  description  String?
+  priceFrom    Int?
+  priceTo      Int?
+  durationMin  Int?
+  isOnSite     Boolean   @default(false)
+  district     String?
+  availability String?
+  lat          Float?
+  lng          Float?
+  viewCount    Int       @default(0)
+  isPromoted   Boolean   @default(false)
+  isDemo       Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+
+  images    ServiceImage[]
+  videos    Video[]
+  orders    Order[]
+}
+
+model ServiceImage {
+  id        String  @id @default(cuid())
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  url       String
+  sortOrder Int     @default(0)
+}
+
+// ----------------------------- Доверие -----------------------------
+
+model Review {
+  id             String   @id @default(cuid())
+  authorId       String
+  author         User     @relation("ReviewAuthor", fields: [authorId], references: [id])
+  targetType     String // PRODUCT | SERVICE | BUSINESS | SPECIALIST
+  targetId       String
+  orderId        String?
+  order          Order?   @relation(fields: [orderId], references: [id])
+  rating         Int // 1..5 общий
+  quality        Int? // критерии 1..5
+  accuracy       Int?
+  speed          Int?
+  communication  Int?
+  priceScore     Int?
+  comment        String?
+  status         String   @default("PUBLISHED") // PUBLISHED | HIDDEN
+  isDemo         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@unique([authorId, targetType, targetId])
+}
+
+model Favorite {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetType String
+  targetId   String
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, targetType, targetId])
+}
+
+model Complaint {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  targetType    String
+  targetId      String
+  reason        String // FRAUD | FALSE_INFO | WRONG_PRICE | NOT_EXISTS | BAD_QUALITY | BEHAVIOR | RULES
+  description   String?
+  status        String   @default("NEW") // NEW | REVIEWED | RESOLVED
+  adminResponse String?
+  createdAt     DateTime @default(now())
+}
+
+// ----------------------------- Коммуникации -----------------------------
+
+model Conversation {
+  id              String   @id @default(cuid())
+  customerId      String
+  customer        User     @relation("CustomerSide", fields: [customerId], references: [id])
+  providerUserId  String
+  provider        User     @relation("ProviderSide", fields: [providerUserId], references: [id])
+  businessId      String?
+  business        Business? @relation(fields: [businessId], references: [id])
+  specialistId    String?
+  specialist      Specialist? @relation(fields: [specialistId], references: [id])
+  lastMessageAt   DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  messages Message[]
+
+  @@unique([customerId, providerUserId])
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+  text           String
+  imageUrl       String?
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+}
+
+// ----------------------------- Сделки -----------------------------
+
+model Order {
+  id           String      @id @default(cuid())
+  code         String      @unique
+  customerId   String
+  customer     User        @relation("CustomerOrders", fields: [customerId], references: [id])
+  targetType   String // PRODUCT | SERVICE
+  productId    String?
+  product      Product?    @relation(fields: [productId], references: [id])
+  serviceId    String?
+  service      Service?    @relation(fields: [serviceId], references: [id])
+  businessId   String?
+  business     Business?   @relation(fields: [businessId], references: [id])
+  specialistId String?
+  specialist   Specialist? @relation(fields: [specialistId], references: [id])
+  status       String      @default("NEW") // NEW | ACCEPTED | IN_PROGRESS | COMPLETED | CANCELLED
+  totalAmount  Int?
+  note         String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  items    OrderItem[]
+  reviews  Review[]
+  payment  Payment?
+}
+
+model OrderItem {
+  id           String   @id @default(cuid())
+  orderId      String
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId    String?
+  product      Product? @relation(fields: [productId], references: [id])
+  quantity     Int      @default(1)
+  priceAtOrder Int
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  orderId   String?  @unique
+  order     Order?   @relation(fields: [orderId], references: [id])
+  amount    Int
+  currency  String   @default("KGS")
+  method    String   @default("CARD") // зарезервировано на Phase 3
+  status    String   @default("PENDING")
+  createdAt DateTime @default(now())
+}
+
+// ----------------------------- Прочее -----------------------------
+
+model Location {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String
+  lat       Float
+  lng       Float
+  createdAt DateTime @default(now())
+}
+
+model Video {
+  id          String   @id @default(cuid())
+  url         String
+  title       String?
+  ownerType   String // BUSINESS | SPECIALIST
+  businessId  String?
+  business    Business? @relation(fields: [businessId], references: [id])
+  specialistId String?
+  specialist  Specialist? @relation(fields: [specialistId], references: [id])
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id])
+  serviceId   String?
+  service     Service? @relation(fields: [serviceId], references: [id])
+  status      String   @default("PENDING") // PENDING | APPROVED | REJECTED
+  views       Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  body      String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Promotion {
+  id          String   @id @default(cuid())
+  ownerType   String // BUSINESS | SPECIALIST
+  businessId  String?
+  business    Business? @relation(fields: [businessId], references: [id])
+  specialistId String?
+  specialist  Specialist? @relation(fields: [specialistId], references: [id])
+  plan        String   @default("BOOST_7D")
+  startsAt    DateTime @default(now())
+  endsAt      DateTime
+  isActive    Boolean  @default(true)
+}
+
+model Subscription {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id])
+  plan        String    @default("FREE") // FREE (триал) | PREMIUM
+  status      String    @default("ACTIVE") // ACTIVE | EXPIRED | PENDING_PAYMENT
+  startsAt    DateTime  @default(now())
+  trialEndsAt DateTime? // конец бесплатного месяца
+  endsAt      DateTime?
+}
+
+// ----------------------------- Контент владельцев -----------------------------
+
+// Бизнес/специалист ведёт блог о своих работах (портфолио-посты).
+model Post {
+  id           String     @id @default(cuid())
+  ownerType    String // BUSINESS | SPECIALIST
+  businessId   String?
+  business     Business?  @relation(fields: [businessId], references: [id])
+  specialistId String?
+  specialist   Specialist? @relation(fields: [specialistId], references: [id])
+  title        String?
+  text         String
+  images       PostImage[]
+  createdAt    DateTime   @default(now())
+  isDemo       Boolean    @default(false)
+}
+
+model PostImage {
+  id        String @id @default(cuid())
+  postId    String
+  post      Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  url       String
+  sortOrder Int    @default(0)
+}
+
+// Временные истории (исчезают через 24 часа) — для наблюдателей.
+model Story {
+  id           String      @id @default(cuid())
+  ownerType    String // BUSINESS | SPECIALIST
+  businessId   String?
+  business     Business?   @relation(fields: [businessId], references: [id])
+  specialistId String?
+  specialist   Specialist? @relation(fields: [specialistId], references: [id])
+  imageUrl     String
+  caption      String?
+  createdAt    DateTime    @default(now())
+  expiresAt    DateTime
+}
+
+// «Наблюдатели» — подписчики бизнеса/специалиста (раздел ТЗ: аудитория).
+model Watch {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ownerType  String // BUSINESS | SPECIALIST
+  ownerId    String
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, ownerType, ownerId])
+}
+
+model SearchHistory {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  query     String
+  createdAt DateTime @default(now())
+}
